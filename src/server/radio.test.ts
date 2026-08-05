@@ -144,3 +144,141 @@ describe('Radio: historia', () => {
     radio.stop();
   });
 });
+
+describe('Radio: tryby specjalne', () => {
+  const special = (id: string, data: unknown = { d: id }): SpecialMode => ({
+    id,
+    duration: 15_000,
+    fetchData: async () => data,
+  });
+
+  test('tryb wchodzi po interwale, po zakończeniu bieżącego elementu (bez preempcji)', async () => {
+    const { radio, states } = setup({
+      memes: [img('a.jpg'), img('b.jpg')],
+      specials: [special('pantry')],
+      config: { adInterval: 99, specialIntervalMs: 25_000 },
+    });
+    radio.start(); // t=0: mem1 (10s), mem2 (10s), mem3 (10s) — interwał mija w t=25s, w trakcie mem3
+    await vi.advanceTimersByTimeAsync(29_000);
+    expect(states.at(-1)!.item.kind).toBe('image'); // mem3 się nie przerwał
+    await vi.advanceTimersByTimeAsync(1_500); // t=30.5s: mem3 skończony → special
+    const last = states.at(-1)!;
+    expect(last.item.kind).toBe('special');
+    expect(last.item.specialId).toBe('pantry');
+    expect(last.item.data).toEqual({ d: 'pantry' });
+    expect(last.item.seed).toBeTypeOf('number');
+    expect(last.duration).toBe(15_000);
+    radio.stop();
+  });
+
+  test('round-robin przy wielu trybach', async () => {
+    const { radio, states } = setup({
+      memes: [img('a.jpg')],
+      specials: [special('one'), special('two')],
+      config: { adInterval: 99, specialIntervalMs: 15_000 },
+    });
+    radio.start();
+    await vi.advanceTimersByTimeAsync(120_000);
+    const ids = states.filter((s) => s.item.kind === 'special').map((s) => s.item.specialId);
+    expect(ids.length).toBeGreaterThanOrEqual(2);
+    expect(ids[0]).toBe('one');
+    expect(ids[1]).toBe('two');
+    radio.stop();
+  });
+
+  test('fetchData rzuca → tryb gra z data=null', async () => {
+    const broken: SpecialMode = {
+      id: 'broken',
+      duration: 5_000,
+      fetchData: async () => { throw new Error('down'); },
+    };
+    const { radio, states } = setup({
+      memes: [img('a.jpg')],
+      specials: [broken],
+      config: { adInterval: 99, specialIntervalMs: 5_000 },
+    });
+    radio.start();
+    await vi.advanceTimersByTimeAsync(30_000);
+    const sp = states.find((s) => s.item.kind === 'special')!;
+    expect(sp.item.data).toBeNull();
+    radio.stop();
+  });
+});
+
+describe('Radio: NOWY MEM', () => {
+  test('nowy mem przerywa obrazek natychmiast, z newMem=true', async () => {
+    const { radio, memes, states } = setup({ memes: [img('a.jpg')], config: { adInterval: 99 } });
+    radio.start();
+    await vi.advanceTimersByTimeAsync(3_000);
+    memes.add(img('nowy.jpg'));
+    const last = states.at(-1)!;
+    expect(last.item.name).toBe('nowy.jpg');
+    expect(last.newMem).toBe(true);
+    radio.stop();
+  });
+
+  test('nowy mem wybudza z idle', async () => {
+    const { radio, memes, states } = setup();
+    radio.start();
+    expect(states.at(-1)!.item.kind).toBe('idle');
+    memes.add(img('pierwszy.jpg'));
+    expect(states.at(-1)!).toMatchObject({ newMem: true, item: { name: 'pierwszy.jpg' } });
+    radio.stop();
+  });
+
+  test('nowe memy podczas reklamy czekają w kolejce FIFO i grają po niej', async () => {
+    const { radio, memes, states } = setup({
+      memes: [img('a.jpg')],
+      ads: [vid('reklama.mp4', 20_000)],
+      config: { adInterval: 1 },
+    });
+    radio.start(); // mem a (10s) → reklama (20s)
+    await vi.advanceTimersByTimeAsync(15_000); // w trakcie reklamy
+    expect(states.at(-1)!.item.kind).toBe('ad');
+    memes.add(img('q1.jpg'));
+    memes.add(img('q2.jpg'));
+    expect(states.at(-1)!.item.kind).toBe('ad'); // reklama NIE przerwana
+    await vi.advanceTimersByTimeAsync(15_001); // reklama się kończy (t=30s) → q1
+    expect(states.at(-1)!).toMatchObject({ newMem: true, item: { name: 'q1.jpg' } });
+    await vi.advanceTimersByTimeAsync(10_001); // → q2
+    expect(states.at(-1)!).toMatchObject({ newMem: true, item: { name: 'q2.jpg' } });
+    radio.stop();
+  });
+});
+
+describe('Radio: komendy panelu', () => {
+  test('playAdNow przerywa bieżący element reklamą', async () => {
+    const { radio, states } = setup({ memes: [img('a.jpg')], ads: [vid('r.mp4', 5_000)], config: { adInterval: 99 } });
+    radio.start();
+    await vi.advanceTimersByTimeAsync(2_000);
+    radio.playAdNow();
+    expect(states.at(-1)!.item).toMatchObject({ kind: 'ad', url: '/ads/r.mp4' });
+    radio.stop();
+  });
+
+  test('playAdNow bez reklam = no-op', async () => {
+    const { radio, states } = setup({ memes: [img('a.jpg')], config: { adInterval: 99 } });
+    radio.start();
+    const count = states.length;
+    radio.playAdNow();
+    expect(states.length).toBe(count);
+    radio.stop();
+  });
+
+  test('stopAd przerywa tylko reklamę; kolejka nowych memów ma pierwszeństwo', async () => {
+    const { radio, memes, states } = setup({
+      memes: [img('a.jpg')],
+      ads: [vid('r.mp4', 60_000)],
+      config: { adInterval: 99 },
+    });
+    radio.start();
+    radio.stopAd(); // gra mem — no-op
+    expect(states.at(-1)!.item.kind).toBe('image');
+    radio.playAdNow();
+    expect(states.at(-1)!.item.kind).toBe('ad');
+    memes.add(img('swiezak.jpg')); // do kolejki
+    radio.stopAd();
+    expect(states.at(-1)!).toMatchObject({ newMem: true, item: { name: 'swiezak.jpg' } });
+    radio.stop();
+  });
+});
