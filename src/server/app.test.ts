@@ -71,4 +71,17 @@ describe('app', () => {
     ws.close();
     ws2.close();
   });
+
+  test('stop() kończy się mimo podłączonego klienta', async () => {
+    const { ws } = await openWs();
+    await wait(100);
+    // klient celowo NIE jest zamykany
+    await expect(
+      Promise.race([
+        app.stop().then(() => 'stopped'),
+        wait(3000).then(() => { throw new Error('stop() hang'); }),
+      ]),
+    ).resolves.toBe('stopped');
+    ws.close(); // sprzątanie po terminate i tak jest no-opem
+  });
 });

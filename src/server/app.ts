@@ -54,6 +54,7 @@ export async function createApp(config: Config): Promise<App> {
   };
 
   wss.on('connection', (ws) => {
+    ws.on('error', (err) => console.warn('[ws] client error:', err.message));
     ws.send(JSON.stringify(radio.stateMessage()));
     ws.send(JSON.stringify(historyMessage()));
     ws.on('message', (raw) => {
@@ -79,11 +80,16 @@ export async function createApp(config: Config): Promise<App> {
   });
   radio.start();
 
+  let stopped = false;
+
   return {
     server,
     radio,
     async stop(): Promise<void> {
+      if (stopped) return;
+      stopped = true;
       radio.stop();
+      for (const client of wss.clients) client.terminate();
       wss.close();
       await new Promise<void>((res) => server.close(() => res()));
       await Promise.all([memes.stop(), ads.stop()]);
