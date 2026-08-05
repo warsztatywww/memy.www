@@ -38,4 +38,10 @@ export class ShuffleBag<T> {
     this.last = this.bag.pop();
     return this.last;
   }
+
+  consume(item: T): void {
+    const i = this.bag.indexOf(item);
+    if (i !== -1) this.bag.splice(i, 1);
+    this.last = item;
+  }
 }

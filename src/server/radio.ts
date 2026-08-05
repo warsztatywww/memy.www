@@ -107,6 +107,7 @@ export class Radio extends EventEmitter {
       this.newMemQueue.push(item);
       return;
     }
+    this.memeBag.consume(item.file);
     this.playMedia(item, { newMem: true });
   }
 
@@ -126,7 +127,10 @@ export class Radio extends EventEmitter {
 
   private advance(): void {
     const queued = this.newMemQueue.shift();
-    if (queued) return this.playMedia(queued, { newMem: true });
+    if (queued) {
+      this.memeBag.consume(queued.file);
+      return this.playMedia(queued, { newMem: true });
+    }
 
     if (this.pendingSpecial) {
       const { mode, data } = this.pendingSpecial;

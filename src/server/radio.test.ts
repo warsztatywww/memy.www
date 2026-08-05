@@ -79,6 +79,18 @@ describe('Radio: cykl memów', () => {
     expect(states[0].duration).toBe(0);
     radio.stop();
   });
+
+  test('NOWY MEM odtworzony natychmiast nie powtarza się w tym samym cyklu', async () => {
+    const { radio, memes, states } = setup({ memes: [img('a.jpg')], config: { adInterval: 99 } });
+    radio.start();
+    expect(states[0].item.name).toBe('a.jpg');
+    memes.add(img('b.jpg'));
+    expect(states[1].item.name).toBe('b.jpg');
+    expect(states[1].newMem).toBe(true);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(states[2].item.name).toBe('a.jpg');
+    radio.stop();
+  });
 });
 
 describe('Radio: reklamy', () => {

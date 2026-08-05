@@ -43,4 +43,21 @@ describe('ShuffleBag', () => {
     const rest = [bag.next(), bag.next()];
     expect([first, ...rest].sort()).toEqual(['a', 'b', 'c']);
   });
+
+  test('consume usuwa element z bieżącego worka — nie zostanie wylosowany w tym cyklu', () => {
+    const bag = new ShuffleBag<string>(mulberry32(1));
+    bag.setItems(['a', 'b', 'c']);
+    bag.consume('c');
+    const rest = [bag.next(), bag.next()];
+    expect(rest.sort()).toEqual(['a', 'b']);
+  });
+
+  test('consume ustawia last — kolejny cykl nie zaczyna się od tego elementu', () => {
+    const bag = new ShuffleBag<string>(mulberry32(1));
+    bag.setItems(['a', 'b']);
+    const first = bag.next()!;
+    const remaining = first === 'a' ? 'b' : 'a';
+    bag.consume(remaining); // opróżnia worek, last = remaining
+    expect(bag.next()).not.toBe(remaining);
+  });
 });
