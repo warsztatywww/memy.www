@@ -1,0 +1,35 @@
+{
+  "name": "memiarka",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "dev": "concurrently \"vite build --watch\" \"tsx watch src/server/main.ts\"",
+    "build": "vite build",
+    "start": "tsx src/server/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "chokidar": "^5.0.0",
+    "express": "^5.2.1",
+    "tsx": "^4.23.8",
+    "ws": "^8.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.2",
+    "@types/ws": "^8.18.1",
+    "concurrently": "^10.0.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}
