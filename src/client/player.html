@@ -1,5 +1,24 @@
 <!doctype html>
 <html lang="pl">
-<head><meta charset="utf-8"><title>Memiarka</title></head>
-<body><h1>player</h1></body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memiarka</title>
+  <link rel="stylesheet" href="./player/style.css">
+</head>
+<body>
+  <div id="stage">
+    <img id="layer-img" class="layer" alt="">
+    <video id="layer-video" class="layer" playsinline></video>
+    <canvas id="layer-canvas" class="layer"></canvas>
+    <div id="video-error" class="overlay hidden"></div>
+    <div id="idle" class="overlay hidden">wrzuć pliki do ./media</div>
+    <div id="banner" class="hidden">NOWY MEM!</div>
+    <div id="start-overlay" class="overlay">
+      <button id="start">▶ START</button>
+      <button id="fullscreen">Pełny ekran</button>
+    </div>
+  </div>
+  <script type="module" src="./player/main.ts"></script>
+</body>
 </html>
