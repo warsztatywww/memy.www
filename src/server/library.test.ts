@@ -75,4 +75,15 @@ describe('MediaLibrary', () => {
     expect(await removed).toBe('a.jpg');
     expect(lib.items()).toHaveLength(0);
   });
+
+  test('plik istniejący przed startem nie emituje added po starcie', async () => {
+    await writeFile(join(dir, 'stary.jpg'), 'x');
+    lib = new MediaLibrary(dir, { probe: fakeProbe, stabilityThreshold: 50 });
+    await lib.start();
+    const added: string[] = [];
+    lib.on('added', (i: MediaItem) => added.push(i.file));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(added).toEqual([]);
+    expect(lib.items().map((i) => i.file)).toEqual(['stary.jpg']);
+  });
 });

@@ -55,17 +55,20 @@ export class MediaLibrary extends EventEmitter implements MediaSource {
     );
     this.watcher = chokidar.watch(this.dir, {
       depth: 0,
-      ignoreInitial: true,
+      ignoreInitial: false,
       awaitWriteFinish: {
         stabilityThreshold: this.opts.stabilityThreshold ?? 2000,
         pollInterval: 100,
       },
     });
-    this.watcher.on('add', (p) => void this.tryAdd(p, true));
+    this.watcher.on('add', (p) => {
+      if (!this.byFile.has(basename(p))) void this.tryAdd(p, true);
+    });
     this.watcher.on('unlink', (p) => {
       const file = basename(p);
       if (this.byFile.delete(file)) this.emit('removed', file);
     });
+    this.watcher.on('error', (err) => console.warn('[library] watcher error:', err));
     await new Promise<void>((res) => this.watcher!.once('ready', res));
   }
 
