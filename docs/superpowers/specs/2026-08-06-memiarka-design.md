@@ -50,8 +50,8 @@ memiarka/
 - Obserwuje `MEDIA_DIR` i `ADS_DIR` przez chokidar z `awaitWriteFinish`
   (żeby nie złapać pliku w połowie kopiowania). Hot-reload bez restartu.
 - Katalog memów: obrazki (jpg/png/gif/webp) i wideo (mp4/webm). Katalog reklam: tylko wideo.
-- Dla wideo odczytuje długość przez `ffprobe`. Ścieżka do binarki z `FFPROBE_PATH`;
-  w dev domyślnie `ffprobe-static`, w obrazie Dockera systemowy `ffprobe` z apk.
+- Dla wideo odczytuje długość przez `ffprobe` (zakładamy, że jest w `PATH`;
+  w obrazie Dockera instalowany przez apk, w dev — z systemowego ffmpeg).
 - Plik nieczytelny / nieobsługiwany / ffprobe zwraca błąd → plik pomijany, wpis w logu.
 - Emituje zdarzenia `added` / `removed` (z rozróżnieniem katalogu).
 
@@ -145,7 +145,7 @@ Tryb to para modułów spięta wspólnym `id`:
 
 ### Tryb `pantry` („Czy jest ser/mleko/chleb?")
 
-Źródła (odpytywane równolegle, timeout 3 s każde, konfigurowalne przez env):
+Źródła (odpytywane równolegle, timeout 3 s każde, URL-e zahardkodowane):
 
 | Zasób | URL |
 |---|---|
@@ -171,8 +171,8 @@ czerwony alarm (miganie, trzęsienie); `unknown`: szary znak zapytania.
 | `AD_INTERVAL` | `10` | reklama co N elementów cyklu |
 | `SPECIAL_INTERVAL` | `300` (s) | interwał trybów specjalnych |
 | `HISTORY_SIZE` | `50` | rozmiar bufora historii |
-| `FFPROBE_PATH` | auto | ścieżka do ffprobe |
-| `PANTRY_URL_*` | jw. | URL-e trzech serwisów trybu `pantry` |
+
+`ffprobe` musi być dostępne w `PATH`. URL-e serwisów trybu `pantry` są zahardkodowane.
 
 ## Docker
 
