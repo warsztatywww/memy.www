@@ -232,3 +232,49 @@ describe('app: zgłaszanie i skip', () => {
     ws.close();
   });
 });
+
+describe('app: automatyczne reklamy', () => {
+  test('state zawiera autoAds=true; setAutoAds po WS broadcastuje nową wartość', async () => {
+    const { ws, messages } = await openWs();
+    await wait(100);
+    const first = messages.find((m) => m.type === 'state');
+    if (first?.type !== 'state') throw new Error('brak state');
+    expect(first.autoAds).toBe(true);
+    ws.send(JSON.stringify({ type: 'setAutoAds', enabled: false }));
+    await wait(200);
+    const last = messages.filter((m) => m.type === 'state').at(-1);
+    if (last?.type !== 'state') throw new Error('brak state');
+    expect(last.autoAds).toBe(false);
+    ws.close();
+  });
+
+  test('setAutoAds z enabled nie-boolean jest ignorowany', async () => {
+    const { ws } = await openWs();
+    await wait(100);
+    ws.send(JSON.stringify({ type: 'setAutoAds', enabled: 'nie' }));
+    await wait(200);
+    const { ws: ws2, messages: m2 } = await openWs();
+    await wait(200);
+    const state = m2.find((m) => m.type === 'state');
+    if (state?.type !== 'state') throw new Error('brak state');
+    expect(state.autoAds).toBe(true);
+    ws.close();
+    ws2.close();
+  });
+
+  test('autoAds=false przeżywa restart serwera (data/settings.json)', async () => {
+    const { ws } = await openWs();
+    await wait(100);
+    ws.send(JSON.stringify({ type: 'setAutoAds', enabled: false }));
+    await wait(200);
+    ws.close();
+    await app.stop();
+    await startApp(); // ten sam katalog `dir` → ten sam data/settings.json
+    const { ws: ws2, messages: m2 } = await openWs();
+    await wait(200);
+    const state = m2.find((m) => m.type === 'state');
+    if (state?.type !== 'state') throw new Error('brak state');
+    expect(state.autoAds).toBe(false);
+    ws2.close();
+  });
+});

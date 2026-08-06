@@ -16,6 +16,7 @@ import type { Config } from './config';
 import { MediaLibrary } from './library';
 import { Radio } from './radio';
 import { createSpecials } from './specials/index';
+import { SettingsStore } from './settings';
 import { StatusPoller } from './status-poller';
 import { TickerStore } from './ticker';
 import { moveToTrash } from './trash';
@@ -38,6 +39,7 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
   const specials = createSpecials(config.haToken, opts.fetchFn);
   const poller = new StatusPoller(specials, config.statusIntervalMs);
   const ticker = new TickerStore(join(config.dataDir, 'ticker.json'));
+  const settings = new SettingsStore(join(config.dataDir, 'settings.json'));
 
   const radio = new Radio({
     memes,
@@ -50,6 +52,7 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
       specialIntervalMs: config.specialIntervalMs,
       historySize: config.historySize,
     },
+    autoAds: settings.autoAds,
   });
 
   const distClient = join(process.cwd(), 'dist/client');
@@ -112,6 +115,9 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
         radio.playAdNow();
       } else if (msg.type === 'skip') {
         radio.skip();
+      } else if (msg.type === 'setAutoAds' && typeof msg.enabled === 'boolean') {
+        settings.setAutoAds(msg.enabled);
+        radio.setAutoAds(msg.enabled);
       } else if (msg.type === 'addTicker' && typeof msg.text === 'string') {
         ticker.add(msg.text);
       } else if (msg.type === 'removeTicker' && typeof msg.id === 'string') {

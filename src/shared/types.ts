@@ -57,6 +57,7 @@ export type ServerMessage = StateMessage | HistoryMessage | PongMessage | Status
 export interface PingMessage { type: 'ping'; t0: number; }
 export interface PlayAdMessage { type: 'playAd'; }
 export interface SkipMessage { type: 'skip'; }
+export interface SetAutoAdsMessage { type: 'setAutoAds'; enabled: boolean; }
 export interface AddTickerMessage { type: 'addTicker'; text: string; }
 export interface RemoveTickerMessage { type: 'removeTicker'; id: string; }
 export const REPORT_REASONS = [
@@ -72,6 +73,7 @@ export type ClientMessage =
   | PingMessage
   | PlayAdMessage
   | SkipMessage
+  | SetAutoAdsMessage
   | AddTickerMessage
   | RemoveTickerMessage
   | ReportMessage;
