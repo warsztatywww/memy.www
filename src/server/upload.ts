@@ -43,6 +43,7 @@ export function uploadHandler(dir: string): RequestHandler {
       if (!res.headersSent) res.status(status).json({ error: msg });
     };
     out.on('error', () => fail(500, 'błąd zapisu'));
+    req.on('error', () => fail(500, 'przerwane wysyłanie'));
     res.on('close', () => {
       // Połączenie padło przed wysłaniem odpowiedzi → sprzątamy niedokończony plik.
       if (!res.writableEnded) fail(500, 'przerwane wysyłanie');
