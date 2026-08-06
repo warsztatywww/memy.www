@@ -8,6 +8,7 @@ export interface Config {
   adInterval: number;
   specialIntervalMs: number;
   historySize: number;
+  haToken: string;
 }
 
 function num(v: string | undefined, fallback: number): number {
@@ -16,6 +17,10 @@ function num(v: string | undefined, fallback: number): number {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+  const haToken = (env.HA_TOKEN ?? '').trim();
+  if (!haToken) {
+    throw new Error('Brak HA_TOKEN (token Home Assistanta) — ustaw w docker-compose.yml albo w środowisku.');
+  }
   return {
     port: num(env.PORT, 8080),
     mediaDir: resolve(env.MEDIA_DIR ?? './media'),
@@ -24,5 +29,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     adInterval: num(env.AD_INTERVAL, 10),
     specialIntervalMs: num(env.SPECIAL_INTERVAL, 300) * 1000,
     historySize: num(env.HISTORY_SIZE, 50),
+    haToken,
   };
 }

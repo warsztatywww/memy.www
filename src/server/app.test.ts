@@ -14,7 +14,7 @@ let port: number;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'memiarka-app-'));
-  const config = loadConfig({ MEDIA_DIR: join(dir, 'media'), ADS_DIR: join(dir, 'ads'), PORT: '0' });
+  const config = loadConfig({ MEDIA_DIR: join(dir, 'media'), ADS_DIR: join(dir, 'ads'), PORT: '0', HA_TOKEN: 't' });
   app = await createApp(config);
   await new Promise<void>((res) => app.server.listen(0, res));
   port = (app.server.address() as AddressInfo).port;
