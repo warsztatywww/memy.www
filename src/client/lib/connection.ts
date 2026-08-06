@@ -1,4 +1,4 @@
-import type { ClientMessage, HistoryMessage, ServerMessage, StateMessage } from '../../shared/types';
+import type { ClientMessage, PongMessage, ServerMessage } from '../../shared/types';
 import { SyncedClock } from './clock';
 
 export interface Connection {
@@ -6,10 +6,12 @@ export interface Connection {
   clock: SyncedClock;
 }
 
+export type IncomingMessage = Exclude<ServerMessage, PongMessage>;
+
 const PING_INTERVAL_MS = 10_000;
 const BACKOFF_MS = [1000, 2000, 4000, 8000, 10_000];
 
-export function connect(onMessage: (msg: StateMessage | HistoryMessage) => void): Connection {
+export function connect(onMessage: (msg: IncomingMessage) => void): Connection {
   const clock = new SyncedClock();
   let ws: WebSocket | null = null;
   let attempt = 0;

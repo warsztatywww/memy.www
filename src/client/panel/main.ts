@@ -28,7 +28,7 @@ const conn = connect((msg) => {
   if (msg.type === 'state') {
     state = msg;
     renderNow();
-  } else {
+  } else if (msg.type === 'history') {
     history = msg.entries;
     renderHistory();
   }

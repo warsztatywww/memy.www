@@ -38,12 +38,32 @@ export interface PongMessage {
   serverTime: number;
 }
 
-export type ServerMessage = StateMessage | HistoryMessage | PongMessage;
+export interface TickerItem { id: string; text: string; }
+
+export interface StatusMessage {
+  type: 'status';
+  pantry: PantryData;
+  showers: ShowersData;
+}
+
+export interface TickerMessage {
+  type: 'ticker';
+  messages: TickerItem[];
+}
+
+export type ServerMessage = StateMessage | HistoryMessage | PongMessage | StatusMessage | TickerMessage;
 
 export interface PingMessage { type: 'ping'; t0: number; }
 export interface PlayAdMessage { type: 'playAd'; }
 export interface StopAdMessage { type: 'stopAd'; }
-export type ClientMessage = PingMessage | PlayAdMessage | StopAdMessage;
+export interface AddTickerMessage { type: 'addTicker'; text: string; }
+export interface RemoveTickerMessage { type: 'removeTicker'; id: string; }
+export type ClientMessage =
+  | PingMessage
+  | PlayAdMessage
+  | StopAdMessage
+  | AddTickerMessage
+  | RemoveTickerMessage;
 
 export type PantryStatus = 'ok' | 'low' | 'out' | 'unknown';
 export interface PantryItemState { status: PantryStatus; text: string; }
