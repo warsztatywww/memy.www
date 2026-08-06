@@ -17,6 +17,7 @@ import { Radio } from './radio';
 import { createSpecials } from './specials/index';
 import { StatusPoller } from './status-poller';
 import { TickerStore } from './ticker';
+import { uploadHandler } from './upload';
 
 export interface App {
   server: http.Server;
@@ -55,6 +56,7 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
   app.get('/player', (_req, res) => res.sendFile(join(distClient, 'player.html')));
   app.use('/media', express.static(config.mediaDir));
   app.use('/ads', express.static(config.adsDir));
+  app.post('/api/upload', uploadHandler(config.mediaDir));
 
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server, path: '/ws' });
