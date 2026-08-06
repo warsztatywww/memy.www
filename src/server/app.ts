@@ -26,7 +26,9 @@ export async function createApp(config: Config): Promise<App> {
   const radio = new Radio({
     memes,
     ads,
-    specials: createSpecials(config.haToken),
+    // TODO(Task 6): podłączyć StatusPoller — na razie slajdy specjalne są pomijane
+    specials: createSpecials(config.haToken).map(({ id, duration }) => ({ id, duration })),
+    getSpecialData: () => null,
     config: {
       imageDurationMs: config.imageDurationMs,
       adInterval: config.adInterval,

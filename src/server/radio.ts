@@ -2,7 +2,11 @@ import { EventEmitter } from 'node:events';
 import type { HistoryEntry, StateItem, StateMessage } from '../shared/types';
 import type { MediaItem, MediaSource } from './library';
 import { ShuffleBag } from './shuffle-bag';
-import type { SpecialMode } from './specials/index';
+
+export interface SpecialSlot {
+  id: string;
+  duration: number; // ms
+}
 
 export interface RadioConfig {
   imageDurationMs: number;
@@ -14,7 +18,8 @@ export interface RadioConfig {
 interface RadioDeps {
   memes: MediaSource;
   ads: MediaSource;
-  specials: SpecialMode[];
+  specials: SpecialSlot[];
+  getSpecialData: (id: string) => unknown;
   config: RadioConfig;
   rng?: () => number;
 }
@@ -29,7 +34,8 @@ interface CurrentState {
 export class Radio extends EventEmitter {
   private memes: MediaSource;
   private ads: MediaSource;
-  private specials: SpecialMode[];
+  private specials: SpecialSlot[];
+  private getSpecialData: (id: string) => unknown;
   private config: RadioConfig;
   private rng: () => number;
 
@@ -39,8 +45,7 @@ export class Radio extends EventEmitter {
   private historyBuf: HistoryEntry[] = [];
   private memesSinceAd = 0;
   private newMemQueue: MediaItem[] = [];
-  private pendingSpecial: { mode: SpecialMode; data: unknown } | null = null;
-  private fetchingSpecial = false;
+  private pendingSpecial: SpecialSlot | null = null;
   private specialIndex = 0;
   private endTimer: ReturnType<typeof setTimeout> | undefined;
   private specialTimer: ReturnType<typeof setInterval> | undefined;
@@ -54,6 +59,7 @@ export class Radio extends EventEmitter {
     this.memes = deps.memes;
     this.ads = deps.ads;
     this.specials = deps.specials;
+    this.getSpecialData = deps.getSpecialData;
     this.config = deps.config;
     this.rng = deps.rng ?? Math.random;
     this.memeBag = new ShuffleBag<string>(this.rng);
@@ -71,7 +77,7 @@ export class Radio extends EventEmitter {
     this.ads.on('added', this.onAdAdded);
     this.ads.on('removed', this.onAdRemoved);
     if (this.specials.length > 0) {
-      this.specialTimer = setInterval(() => this.prefetchSpecial(), this.config.specialIntervalMs);
+      this.specialTimer = setInterval(() => this.queueSpecial(), this.config.specialIntervalMs);
     }
     this.advance();
   }
@@ -123,18 +129,10 @@ export class Radio extends EventEmitter {
     this.playMedia(item, { newMem: true });
   }
 
-  private prefetchSpecial(): void {
-    if (this.specials.length === 0 || this.pendingSpecial || this.fetchingSpecial) return;
-    const mode = this.specials[this.specialIndex % this.specials.length];
+  private queueSpecial(): void {
+    if (this.specials.length === 0 || this.pendingSpecial) return;
+    this.pendingSpecial = this.specials[this.specialIndex % this.specials.length];
     this.specialIndex++;
-    this.fetchingSpecial = true;
-    void mode
-      .fetchData()
-      .catch(() => null)
-      .then((data) => {
-        this.fetchingSpecial = false;
-        this.pendingSpecial = { mode, data };
-      });
   }
 
   private advance(): void {
@@ -145,9 +143,11 @@ export class Radio extends EventEmitter {
     }
 
     if (this.pendingSpecial) {
-      const { mode, data } = this.pendingSpecial;
+      const slot = this.pendingSpecial;
       this.pendingSpecial = null;
-      return this.playSpecial(mode, data);
+      const data = this.getSpecialData(slot.id);
+      if (data != null) return this.playSpecial(slot, data);
+      // brak snapshotu — slajd pominięty w tej rundzie, interwał zakolejkuje następny
     }
 
     if (this.memesSinceAd >= this.config.adInterval) {
@@ -176,10 +176,10 @@ export class Radio extends EventEmitter {
     this.setState({ kind, url, name: item.file }, duration, opts.newMem ?? false);
   }
 
-  private playSpecial(mode: SpecialMode, data: unknown): void {
+  private playSpecial(slot: SpecialSlot, data: unknown): void {
     this.setState(
-      { kind: 'special', specialId: mode.id, name: mode.id, data, seed: Math.floor(this.rng() * 2 ** 31) },
-      mode.duration,
+      { kind: 'special', specialId: slot.id, name: slot.id, data, seed: Math.floor(this.rng() * 2 ** 31) },
+      slot.duration,
       false,
     );
   }

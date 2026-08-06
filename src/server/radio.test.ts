@@ -3,8 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { mulberry32 } from '../shared/prng';
 import type { StateMessage } from '../shared/types';
 import type { MediaItem, MediaSource } from './library';
-import { Radio, type RadioConfig } from './radio';
-import type { SpecialMode } from './specials/index';
+import { Radio, type RadioConfig, type SpecialSlot } from './radio';
 
 class FakeSource extends EventEmitter implements MediaSource {
   private map = new Map<string, MediaItem>();
@@ -31,7 +30,8 @@ const CONFIG: RadioConfig = {
 function setup(opts: {
   memes?: MediaItem[];
   ads?: MediaItem[];
-  specials?: SpecialMode[];
+  specials?: SpecialSlot[];
+  getSpecialData?: (id: string) => unknown;
   config?: Partial<RadioConfig>;
 } = {}) {
   const memes = new FakeSource(opts.memes ?? []);
@@ -40,6 +40,7 @@ function setup(opts: {
     memes,
     ads,
     specials: opts.specials ?? [],
+    getSpecialData: opts.getSpecialData ?? ((id) => ({ d: id })),
     config: { ...CONFIG, ...opts.config },
     rng: mulberry32(42),
   });
@@ -146,16 +147,12 @@ describe('Radio: historia', () => {
 });
 
 describe('Radio: tryby specjalne', () => {
-  const special = (id: string, data: unknown = { d: id }): SpecialMode => ({
-    id,
-    duration: 15_000,
-    fetchData: async () => data,
-  });
+  const slot = (id: string): SpecialSlot => ({ id, duration: 15_000 });
 
   test('tryb wchodzi po interwale, po zakończeniu bieżącego elementu (bez preempcji)', async () => {
     const { radio, states } = setup({
       memes: [img('a.jpg'), img('b.jpg')],
-      specials: [special('pantry')],
+      specials: [slot('pantry')],
       config: { adInterval: 99, specialIntervalMs: 25_000 },
     });
     radio.start(); // t=0: mem1 (10s), mem2 (10s), mem3 (10s) — interwał mija w t=25s, w trakcie mem3
@@ -165,7 +162,7 @@ describe('Radio: tryby specjalne', () => {
     const last = states.at(-1)!;
     expect(last.item.kind).toBe('special');
     expect(last.item.specialId).toBe('pantry');
-    expect(last.item.data).toEqual({ d: 'pantry' });
+    expect(last.item.data).toEqual({ d: 'pantry' }); // snapshot z getSpecialData
     expect(last.item.seed).toBeTypeOf('number');
     expect(last.duration).toBe(15_000);
     radio.stop();
@@ -174,7 +171,7 @@ describe('Radio: tryby specjalne', () => {
   test('round-robin przy wielu trybach', async () => {
     const { radio, states } = setup({
       memes: [img('a.jpg')],
-      specials: [special('one'), special('two')],
+      specials: [slot('one'), slot('two')],
       config: { adInterval: 99, specialIntervalMs: 15_000 },
     });
     radio.start();
@@ -186,21 +183,34 @@ describe('Radio: tryby specjalne', () => {
     radio.stop();
   });
 
-  test('fetchData rzuca → tryb gra z data=null', async () => {
-    const broken: SpecialMode = {
-      id: 'broken',
-      duration: 5_000,
-      fetchData: async () => { throw new Error('down'); },
-    };
+  test('getSpecialData zwraca null → slajd pominięty, grają memy', async () => {
     const { radio, states } = setup({
-      memes: [img('a.jpg')],
-      specials: [broken],
+      memes: [img('a.jpg'), img('b.jpg')],
+      specials: [slot('x')],
+      getSpecialData: () => null,
       config: { adInterval: 99, specialIntervalMs: 5_000 },
     });
     radio.start();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(states.every((s) => s.item.kind === 'image')).toBe(true);
+    radio.stop();
+  });
+
+  test('po pominięciu slajd wraca, gdy dane się pojawią', async () => {
+    let data: unknown = null;
+    const { radio, states } = setup({
+      memes: [img('a.jpg')],
+      specials: [slot('x')],
+      getSpecialData: () => data,
+      config: { adInterval: 99, specialIntervalMs: 5_000 },
+    });
+    radio.start();
+    await vi.advanceTimersByTimeAsync(30_000); // kilka pominięć
+    expect(states.some((s) => s.item.kind === 'special')).toBe(false);
+    data = { gotowe: true };
     await vi.advanceTimersByTimeAsync(30_000);
-    const sp = states.find((s) => s.item.kind === 'special')!;
-    expect(sp.item.data).toBeNull();
+    const sp = states.find((s) => s.item.kind === 'special');
+    expect(sp?.item.data).toEqual({ gotowe: true });
     radio.stop();
   });
 });
