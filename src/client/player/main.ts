@@ -135,6 +135,7 @@ function showSpecial(state: StateMessage): void {
 }
 
 const TICKER_SPEED_PX_S = 120; // stała prędkość — dłuższa treść przewija się dłużej
+const TICKER_SEP = '  •  '; // spacje nierozdzielające — nie kolapsują się w HTML
 
 function renderTicker(messages: TickerItem[]): void {
   if (messages.length === 0) {
@@ -142,12 +143,26 @@ function renderTicker(messages: TickerItem[]): void {
     return;
   }
   tickerBar.classList.remove('hidden');
-  // treść zduplikowana (a+b) — animacja do -50% zapętla się płynnie
-  const text = messages.map((m) => m.text).join('   •   ') + '   •   ';
+  const text = messages.map((m) => m.text).join(TICKER_SEP);
+  // najpierw jedna kopia — mierzymy, czy w ogóle trzeba przewijać
   tickerA.textContent = text;
-  tickerB.textContent = text;
+  tickerB.textContent = '';
   requestAnimationFrame(() => {
-    tickerTrack.style.animationDuration = `${Math.max(8, tickerA.offsetWidth / TICKER_SPEED_PX_S)}s`;
+    if (tickerA.offsetWidth <= tickerBar.clientWidth) {
+      // tryb statyczny: treść mieści się w pasku, bez duplikatu i bez animacji
+      tickerB.textContent = '';
+      tickerTrack.style.animation = 'none';
+      return;
+    }
+    // tryb przewijania: druga kopia z separatorem na styku a→b, animacja do -50%
+    tickerA.textContent = text + TICKER_SEP;
+    tickerB.textContent = text + TICKER_SEP;
+    const duration = Math.max(8, tickerA.offsetWidth / TICKER_SPEED_PX_S);
+    // restart animacji od zera, żeby nie dziedziczyć ułamkowego postępu po zmianie treści
+    tickerTrack.style.animation = 'none';
+    void tickerTrack.offsetWidth;
+    tickerTrack.style.animation = '';
+    tickerTrack.style.animationDuration = `${duration}s`;
   });
 }
 
