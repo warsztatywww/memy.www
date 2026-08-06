@@ -20,7 +20,7 @@ przeskakuje cokolwiek aktualnie gra.
 - **Kosz:** `MEDIA_DIR/trash` — watcher biblioteki skanuje tylko depth 0,
   więc kosz jest dla kolejki niewidoczny; rename w obrębie tego samego
   wolumenu jest atomowy, a w Dockerze kosz siedzi w zamontowanym `./memy`.
-- **Kolizja nazw w koszu:** dopisywany sufiks z timestampem, nic nie
+- **Kolizja nazw w koszu:** dopisywany prefiks z timestampem (`<timestamp>-<nazwa>`), nic nie
   nadpisujemy.
 - **Powód:** wymagany w UI (nie da się zgłosić bez wyboru), przesyłany na
   serwer, logowany do konsoli, **nie** zapisywany trwale.
@@ -113,7 +113,7 @@ bez osobnego komunikatu zwrotnego.
 - `reason` spoza listy → zignorowany;
 - błąd `rename` (np. plik zniknął między walidacją a przeniesieniem) →
   log ostrzeżenia, biblioteka nietknięta;
-- kolizja nazwy w koszu → sufiks z timestampem.
+- kolizja nazwy w koszu → prefiks z timestampem.
 
 ## Testy
 
@@ -124,7 +124,7 @@ bez osobnego komunikatu zwrotnego.
 - `app.test.ts` (prawdziwy serwer + katalog tymczasowy): report przenosi
   plik do `MEDIA_DIR/trash` i mem znika z rotacji; report grającego mema
   natychmiast zmienia stan; report nieznanego pliku / złego powodu nie
-  zmienia niczego; kolizja nazwy w koszu tworzy plik z sufiksem;
+  zmienia niczego; kolizja nazwy w koszu tworzy plik z prefiksem;
   wiadomość `skip` przerywa bieżący element.
 
 ## Poza zakresem
