@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="./player/style.css">
 </head>
 <body>
+  <div id="ticker-bar" class="hidden">
+    <div id="ticker-track"><span id="ticker-a"></span><span id="ticker-b"></span></div>
+  </div>
   <div id="stage">
     <img id="layer-img" class="layer" alt="">
     <video id="layer-video" class="layer" playsinline></video>
@@ -18,6 +21,10 @@
       <button id="start">▶ START</button>
       <button id="fullscreen">Pełny ekran</button>
     </div>
+  </div>
+  <div id="status-bar">
+    <div id="status-pantry" class="status-group"></div>
+    <div id="status-showers" class="status-group"></div>
   </div>
   <script type="module" src="./player/main.ts"></script>
 </body>

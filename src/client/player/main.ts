@@ -1,5 +1,5 @@
 import { mulberry32 } from '../../shared/prng';
-import type { StateMessage } from '../../shared/types';
+import type { PantryItemState, ShowerState, StateMessage, StatusMessage, TickerItem } from '../../shared/types';
 import { connect } from '../lib/connection';
 import { clientSpecials } from '../specials/index';
 
@@ -11,6 +11,12 @@ const idleEl = $('#idle');
 const banner = $('#banner');
 const videoError = $('#video-error');
 const startOverlay = $('#start-overlay');
+const tickerBar = $('#ticker-bar');
+const tickerTrack = $('#ticker-track');
+const tickerA = $('#ticker-a');
+const tickerB = $('#ticker-b');
+const statusPantry = $('#status-pantry');
+const statusShowers = $('#status-showers');
 
 const BANNER_MS = 4000;
 let started = false;
@@ -30,6 +36,10 @@ if (!preview) {
     if (msg.type === 'state') {
       lastState = msg;
       if (started && stateKey(msg) !== appliedKey) apply(msg);
+    } else if (msg.type === 'ticker') {
+      renderTicker(msg.messages);
+    } else if (msg.type === 'status') {
+      renderStatus(msg);
     }
   });
   nowFn = () => conn.clock.now();
@@ -123,6 +133,78 @@ function showSpecial(state: StateMessage): void {
   };
   rafId = requestAnimationFrame(frame);
 }
+
+const TICKER_SPEED_PX_S = 120; // stała prędkość — dłuższa treść przewija się dłużej
+
+function renderTicker(messages: TickerItem[]): void {
+  if (messages.length === 0) {
+    tickerBar.classList.add('hidden');
+    return;
+  }
+  tickerBar.classList.remove('hidden');
+  // treść zduplikowana (a+b) — animacja do -50% zapętla się płynnie
+  const text = messages.map((m) => m.text).join('   •   ') + '   •   ';
+  tickerA.textContent = text;
+  tickerB.textContent = text;
+  requestAnimationFrame(() => {
+    tickerTrack.style.animationDuration = `${Math.max(8, tickerA.offsetWidth / TICKER_SPEED_PX_S)}s`;
+  });
+}
+
+const PANTRY_CLS: Record<string, string> = { ok: 'ok', low: 'warn', out: 'bad', unknown: 'unknown' };
+
+function statusItem(text: string, cls: string): HTMLElement {
+  const el = document.createElement('span');
+  el.className = `status-item ${cls}`;
+  el.textContent = text;
+  return el;
+}
+
+function showerBadge(s: ShowerState): { label: string; cls: string } {
+  if (s.occupancy === 'occupied') return { label: 'zajęty', cls: 'bad' };
+  if (s.occupancy === 'free') return { label: 'wolny', cls: 'ok' };
+  // czujników obecności jeszcze nie ma w HA — fallback na światło
+  if (s.light === 'on') return { label: 'zajęty?', cls: 'warn' };
+  if (s.light === 'off') return { label: 'wolny?', cls: 'ok' };
+  return { label: '?', cls: 'unknown' };
+}
+
+function renderStatus(msg: StatusMessage): void {
+  const pantry: [string, PantryItemState][] = [
+    ['🧀 ser', msg.pantry.ser],
+    ['🥛 mleko', msg.pantry.mleko],
+    ['🍞 chleb', msg.pantry.chleb],
+  ];
+  statusPantry.replaceChildren(
+    ...pantry.map(([label, item]) => statusItem(label, PANTRY_CLS[item.status] ?? 'unknown')),
+  );
+  const showers: [string, ShowerState][] = [
+    ['qWWWetek', msg.showers.qwwwetek],
+    ['qWWWetka', msg.showers.qwwwetka],
+    ['WWWipownia', msg.showers.wwwipownia],
+  ];
+  statusShowers.replaceChildren(
+    ...showers.map(([name, s]) => {
+      const b = showerBadge(s);
+      return statusItem(`🚿 ${name}: ${b.label}`, b.cls);
+    }),
+  );
+}
+
+// Szare „?" do czasu pierwszej wiadomości status.
+renderStatus({
+  type: 'status',
+  pantry: {
+    ser: { status: 'unknown', text: '?' },
+    mleko: { status: 'unknown', text: '?' },
+    chleb: { status: 'unknown', text: '?' },
+  },
+  showers: {
+    qwwwetek: { light: 'unknown', occupancy: 'unknown' },
+    qwwwetka: { light: 'unknown', occupancy: 'unknown' },
+    wwwipownia: { light: 'unknown', occupancy: 'unknown', somtasma: 'unknown', somtasmaPreset: null },
+  },
+});
 
 if (preview) {
   const special = clientSpecials.find((s) => s.id === preview);

@@ -1,6 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; background: #000; overflow: hidden; }
-#stage { position: relative; width: 100vw; height: 100vh; }
+body { display: flex; flex-direction: column; }
+#stage { position: relative; flex: 1; min-height: 0; }
 .layer {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: contain; opacity: 0; transition: opacity 0.3s;
@@ -29,3 +30,24 @@ html, body { height: 100%; background: #000; overflow: hidden; }
   to { transform: translateX(-50%) rotate(4deg) scale(1.15); }
 }
 #video-error { font-size: 1.2rem; color: #888; z-index: 5; }
+#ticker-bar {
+  height: 5vh; min-height: 32px; display: flex; align-items: center; overflow: hidden;
+  background: #101018; border-bottom: 1px solid #2a2a38;
+  font: 600 3vh system-ui, sans-serif; color: #ffd75e;
+}
+#ticker-track { display: inline-flex; white-space: nowrap; animation: ticker-scroll linear infinite; }
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+#status-bar {
+  height: 5vh; min-height: 36px; display: flex; justify-content: space-between; align-items: center;
+  padding: 0 1.5vw; background: #101018; border-top: 1px solid #2a2a38;
+  font: 600 2.6vh system-ui, sans-serif;
+}
+.status-group { display: flex; gap: 2vw; }
+.status-item { white-space: nowrap; }
+.status-item.ok { color: #6fd66f; }
+.status-item.warn { color: #ffd75e; }
+.status-item.bad { color: #ff6b6b; }
+.status-item.unknown { color: #777; }
