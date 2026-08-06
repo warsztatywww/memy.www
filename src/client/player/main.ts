@@ -15,15 +15,25 @@ const startOverlay = $('#start-overlay');
 const BANNER_MS = 4000;
 let started = false;
 let lastState: StateMessage | null = null;
+let appliedKey: string | null = null;
 let rafId = 0;
 let bannerTimer: ReturnType<typeof setTimeout> | undefined;
 
-const conn = connect((msg) => {
-  if (msg.type === 'state') {
-    lastState = msg;
-    if (started) apply(msg);
-  }
-});
+// Tryb podglądu trybów specjalnych: /player?preview=pantry (bez WS, dane z previewData)
+const preview = new URLSearchParams(location.search).get('preview');
+
+// Zegar: w trybie normalnym synchronizowany z serwerem, w trybie podglądu — lokalny (brak WS).
+let nowFn: () => number = Date.now;
+
+if (!preview) {
+  const conn = connect((msg) => {
+    if (msg.type === 'state') {
+      lastState = msg;
+      if (started && stateKey(msg) !== appliedKey) apply(msg);
+    }
+  });
+  nowFn = () => conn.clock.now();
+}
 
 $('#start').addEventListener('click', () => {
   started = true;
@@ -34,8 +44,12 @@ $('#fullscreen').addEventListener('click', () => {
   void document.documentElement.requestFullscreen().catch(() => {});
 });
 
+function stateKey(state: StateMessage): string {
+  return `${state.startedAt}:${state.item.url ?? state.item.specialId ?? state.item.kind}`;
+}
+
 function elapsed(state: StateMessage): number {
-  return conn.clock.now() - state.startedAt;
+  return nowFn() - state.startedAt;
 }
 
 function hideAll(): void {
@@ -49,6 +63,7 @@ function hideAll(): void {
 }
 
 function apply(state: StateMessage): void {
+  appliedKey = stateKey(state);
   hideAll();
   switch (state.item.kind) {
     case 'idle':
@@ -109,8 +124,6 @@ function showSpecial(state: StateMessage): void {
   rafId = requestAnimationFrame(frame);
 }
 
-// Tryb podglądu trybów specjalnych: /player?preview=pantry (bez WS, dane z previewData)
-const preview = new URLSearchParams(location.search).get('preview');
 if (preview) {
   const special = clientSpecials.find((s) => s.id === preview);
   startOverlay.classList.add('hidden');
