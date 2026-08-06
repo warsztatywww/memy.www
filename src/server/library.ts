@@ -44,6 +44,10 @@ export class MediaLibrary extends EventEmitter implements MediaSource {
     return this.byFile.get(file);
   }
 
+  remove(file: string): void {
+    if (this.byFile.delete(file)) this.emit('removed', file);
+  }
+
   async start(): Promise<void> {
     // Skan początkowy własnymi siłami — chokidarowe eventy `add` z awaitWriteFinish
     // potrafią przyjść po `ready` i skan byłby niedeterministyczny.
@@ -62,10 +66,7 @@ export class MediaLibrary extends EventEmitter implements MediaSource {
     this.watcher.on('add', (p) => {
       if (!this.byFile.has(basename(p))) void this.tryAdd(p, true);
     });
-    this.watcher.on('unlink', (p) => {
-      const file = basename(p);
-      if (this.byFile.delete(file)) this.emit('removed', file);
-    });
+    this.watcher.on('unlink', (p) => this.remove(basename(p)));
     this.watcher.on('error', (err) => console.warn('[library] watcher error:', err));
     await new Promise<void>((res) => this.watcher!.once('ready', res));
   }

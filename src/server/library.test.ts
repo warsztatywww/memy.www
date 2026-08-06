@@ -86,4 +86,24 @@ describe('MediaLibrary', () => {
     expect(added).toEqual([]);
     expect(lib.items().map((i) => i.file)).toEqual(['stary.jpg']);
   });
+
+  test('remove() usuwa wpis i emituje removed', async () => {
+    await writeFile(join(dir, 'a.jpg'), 'x');
+    lib = new MediaLibrary(dir, { probe: fakeProbe, stabilityThreshold: 50 });
+    await lib.start();
+    const removed: string[] = [];
+    lib.on('removed', (f: string) => removed.push(f));
+    lib.remove('a.jpg');
+    expect(removed).toEqual(['a.jpg']);
+    expect(lib.get('a.jpg')).toBeUndefined();
+  });
+
+  test('remove() nieznanego pliku nic nie emituje', async () => {
+    lib = new MediaLibrary(dir, { probe: fakeProbe, stabilityThreshold: 50 });
+    await lib.start();
+    const removed: string[] = [];
+    lib.on('removed', (f: string) => removed.push(f));
+    lib.remove('ghost.jpg');
+    expect(removed).toEqual([]);
+  });
 });
