@@ -1,0 +1,20 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font: 16px system-ui, sans-serif; background: #14141c; color: #eee; padding: 1.5rem; max-width: 900px; margin: 0 auto; }
+header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem; }
+header a { color: #7ab8ff; }
+h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: #aaa; }
+section { background: #1d1d28; border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+#now-content { display: flex; align-items: center; gap: 1rem; min-height: 90px; }
+#now-content img, li img { height: 80px; max-width: 140px; object-fit: cover; border-radius: 0.4rem; background: #000; }
+.thumb-icon { display: inline-flex; align-items: center; justify-content: center; height: 80px; width: 110px; font-size: 2.2rem; background: #000; border-radius: 0.4rem; }
+.buttons { margin-top: 1rem; display: flex; gap: 0.75rem; }
+button { font: inherit; padding: 0.6rem 1.2rem; border-radius: 0.5rem; border: none; cursor: pointer; background: #3a6ea5; color: #fff; }
+button:disabled { background: #333; color: #777; cursor: not-allowed; }
+#limit { width: 4rem; font: inherit; background: #14141c; color: #eee; border: 1px solid #444; border-radius: 0.3rem; padding: 0.15rem 0.3rem; }
+ul { list-style: none; }
+li { display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #2a2a38; }
+.meta { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kind { font-size: 0.8rem; color: #999; }
+.time { margin-left: auto; color: #999; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.badge { background: #ff0; color: #900; font-weight: 900; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 0.3rem; transform: rotate(-3deg); display: inline-block; }
