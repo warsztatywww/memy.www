@@ -23,6 +23,7 @@ let started = false;
 let lastState: StateMessage | null = null;
 let appliedKey: string | null = null;
 let rafId = 0;
+let tickerRafId = 0;
 let bannerTimer: ReturnType<typeof setTimeout> | undefined;
 
 // Tryb podglądu trybów specjalnych: /player?preview=pantry (bez WS, dane z previewData)
@@ -147,14 +148,19 @@ function renderTicker(messages: TickerItem[]): void {
   // najpierw jedna kopia — mierzymy, czy w ogóle trzeba przewijać
   tickerA.textContent = text;
   tickerB.textContent = '';
-  requestAnimationFrame(() => {
+  // anuluj zaległy pomiar z poprzedniego wywołania — inaczej jego callback
+  // zmierzy/nadpisze DOM już podmieniony przez to wywołanie
+  cancelAnimationFrame(tickerRafId);
+  tickerRafId = requestAnimationFrame(() => {
     if (tickerA.offsetWidth <= tickerBar.clientWidth) {
-      // tryb statyczny: treść mieści się w pasku, bez duplikatu i bez animacji
+      // tryb statyczny: treść mieści się w pasku, bez duplikatu i bez animacji, wyśrodkowana
       tickerB.textContent = '';
       tickerTrack.style.animation = 'none';
+      tickerBar.classList.add('static');
       return;
     }
     // tryb przewijania: druga kopia z separatorem na styku a→b, animacja do -50%
+    tickerBar.classList.remove('static');
     tickerA.textContent = text + TICKER_SEP;
     tickerB.textContent = text + TICKER_SEP;
     const duration = Math.max(8, tickerA.offsetWidth / TICKER_SPEED_PX_S);

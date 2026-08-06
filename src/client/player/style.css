@@ -36,6 +36,8 @@ body { display: flex; flex-direction: column; }
   font: 600 3vh system-ui, sans-serif; color: #ffd75e;
 }
 #ticker-track { display: inline-flex; white-space: nowrap; animation: ticker-scroll linear infinite; }
+/* Tryb statyczny: treść mieści się w pasku — wyśrodkuj ją zamiast trzymać przy lewej krawędzi. */
+#ticker-bar.static { justify-content: center; }
 @keyframes ticker-scroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
