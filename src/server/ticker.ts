@@ -14,9 +14,11 @@ export class TickerStore extends EventEmitter {
     try {
       const raw: unknown = JSON.parse(readFileSync(filePath, 'utf8'));
       if (Array.isArray(raw)) {
-        this.items = raw.filter(
-          (i): i is TickerItem => typeof i?.id === 'string' && typeof i?.text === 'string',
-        );
+        // ta sama normalizacja co w add() — plik mógł zostać ręcznie zmodyfikowany
+        this.items = raw
+          .filter((i): i is TickerItem => typeof i?.id === 'string' && typeof i?.text === 'string')
+          .map((i) => ({ id: i.id, text: i.text.trim().slice(0, MAX_TEXT_LENGTH) }))
+          .filter((i) => i.text !== '');
       }
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {

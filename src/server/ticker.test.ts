@@ -73,4 +73,19 @@ describe('TickerStore', () => {
     const again = new TickerStore(join(dir, 'nie-istnieje', 'ticker.json'));
     expect(again.messages()).toHaveLength(1);
   });
+
+  test('wczytywanie z pliku normalizuje teksty jak add()', () => {
+    writeFileSync(
+      file,
+      JSON.stringify([
+        { id: 'a', text: 'x'.padEnd(600, 'y') },
+        { id: 'b', text: '   ' },
+      ]),
+    );
+    const store = new TickerStore(file);
+    const msgs = store.messages();
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].id).toBe('a');
+    expect(msgs[0].text.length).toBe(500);
+  });
 });
