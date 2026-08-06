@@ -24,11 +24,13 @@ export function uploadHandler(dir: string): RequestHandler {
     const name = String(req.query.name ?? '');
     const invalid = validateUploadName(name);
     if (invalid) {
+      req.resume(); // drenujemy body, inaczej klient dostanie reset zamiast odpowiedzi 400
       res.status(400).json({ error: invalid });
       return;
     }
     const target = join(dir, name);
     if (existsSync(target)) {
+      req.resume(); // jw. — bez tego duże body mogą urwać połączenie zanim dotrze 409
       res.status(409).json({ error: 'plik o tej nazwie już istnieje' });
       return;
     }
@@ -39,7 +41,11 @@ export function uploadHandler(dir: string): RequestHandler {
       if (failed) return;
       failed = true;
       out.destroy();
-      void rm(tmp, { force: true });
+      // createWriteStream otwiera fd asynchronicznie — jeśli destroy() trafi w to okno,
+      // rm() od razu mogłoby nie zastać jeszcze utworzonego pliku i zostawić sierotę
+      // .tmp po dokończeniu otwarcia. Czekamy na 'close' (WriteStream emituje je zawsze
+      // po destroy(), także gdy otwarcie było w toku), żeby usuwać dopiero po fakcie.
+      out.once('close', () => void rm(tmp, { force: true }));
       if (!res.headersSent) res.status(status).json({ error: msg });
     };
     out.on('error', () => fail(500, 'błąd zapisu'));

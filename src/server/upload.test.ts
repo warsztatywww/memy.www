@@ -4,13 +4,41 @@ import { join } from 'node:path';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { WebSocket } from 'ws';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { ServerMessage } from '../shared/types';
 import { createApp, type App } from './app';
 import { loadConfig } from './config';
 import { validateUploadName } from './upload';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Sterowalne opóźnienie prawdziwego fs.open() użytego wewnątrz createWriteStream —
+// pozwala deterministycznie (bez zgadywania timingu) odtworzyć okno między
+// out.destroy() a zakończeniem asynchronicznego otwarcia pliku, które omawia
+// finding nr 1 (orphaned .tmp). Domyślnie 0 → brak wpływu na pozostałe testy.
+const openDelayMs = vi.hoisted(() => ({ value: 0 }));
+
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    createWriteStream: (
+      path: Parameters<typeof actual.createWriteStream>[0],
+      options?: Parameters<typeof actual.createWriteStream>[1],
+    ) => {
+      if (openDelayMs.value <= 0) return actual.createWriteStream(path, options);
+      return actual.createWriteStream(path, {
+        ...(typeof options === 'object' ? options : {}),
+        fs: {
+          ...actual,
+          open: (...args: unknown[]) => {
+            setTimeout(() => (actual.open as (...a: unknown[]) => void)(...args), openDelayMs.value);
+          },
+        },
+      });
+    },
+  };
+});
 
 describe('validateUploadName', () => {
   test('akceptuje poprawne nazwy obrazów i wideo', () => {
@@ -109,6 +137,31 @@ describe('POST /api/upload', () => {
     });
     await wait(300); // czas na asynchroniczne sprzątnięcie .tmp
     expect(await readdir(join(dir, 'media'))).toEqual([]);
+  });
+
+  test('przerwanie tuż przed dokończeniem otwarcia pliku nie zostawia osieroconego .tmp', async () => {
+    // Sztucznie rozciągamy okno między createWriteStream() a realnym fs.open(), żeby
+    // destroy() na pewno trafił w moment, gdy plik .tmp fizycznie jeszcze nie istnieje —
+    // dokładnie ten wyścig, który naprawia oczekiwanie na 'close' w fail().
+    openDelayMs.value = 300;
+    try {
+      await new Promise<void>((resolve) => {
+        const req = http.request({
+          host: '127.0.0.1',
+          port,
+          path: `/api/upload?name=${encodeURIComponent('race.jpg')}`,
+          method: 'POST',
+          headers: { 'content-length': '10' },
+        });
+        req.on('error', () => resolve());
+        req.write('12345');
+        setTimeout(() => req.destroy(), 5); // dużo wcześniej niż opóźniony fs.open() zdąży się zakończyć
+      });
+      await wait(500); // dłużej niż openDelayMs + zapas na sprzątnięcie po 'close'
+      expect(await readdir(join(dir, 'media'))).toEqual([]);
+    } finally {
+      openDelayMs.value = 0;
+    }
   });
 
   test('wrzucony mem wchodzi do rotacji z banerem NOWY MEM', async () => {
