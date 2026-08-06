@@ -52,3 +52,19 @@ export interface PantryData {
   mleko: PantryItemState;
   chleb: PantryItemState;
 }
+
+export type ShowerLight = 'on' | 'off' | 'unknown';
+export type ShowerOccupancy = 'occupied' | 'free' | 'unknown';
+export interface ShowerState {
+  light: ShowerLight;
+  occupancy: ShowerOccupancy; // z czujnika obecności; 'unknown' dopóki czujników nie ma w HA
+}
+export interface WwwipowniaState extends ShowerState {
+  somtasma: ShowerLight; // pasek LED
+  somtasmaPreset: string | null; // nazwa presetu WLED albo null
+}
+export interface ShowersData {
+  qwwwetek: ShowerState;
+  qwwwetka: ShowerState;
+  wwwipownia: WwwipowniaState;
+}
