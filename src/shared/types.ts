@@ -58,12 +58,22 @@ export interface PlayAdMessage { type: 'playAd'; }
 export interface SkipMessage { type: 'skip'; }
 export interface AddTickerMessage { type: 'addTicker'; text: string; }
 export interface RemoveTickerMessage { type: 'removeTicker'; id: string; }
+export const REPORT_REASONS = [
+  'To nie jest mem',
+  'Jestem na tym zdjęciu i nie podoba mi się to',
+  'Nie ma mnie na tym zdjęciu i nie podoba mi się to',
+  'To jest mem Grzegorza',
+  'Ten mem jest niezgodny z SOM',
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+export interface ReportMessage { type: 'report'; file: string; reason: ReportReason; }
 export type ClientMessage =
   | PingMessage
   | PlayAdMessage
   | SkipMessage
   | AddTickerMessage
-  | RemoveTickerMessage;
+  | RemoveTickerMessage
+  | ReportMessage;
 
 export type PantryStatus = 'ok' | 'low' | 'out' | 'unknown';
 export interface PantryItemState { status: PantryStatus; text: string; }

@@ -11,12 +11,14 @@ import type {
   StatusMessage,
   TickerMessage,
 } from '../shared/types';
+import { REPORT_REASONS } from '../shared/types';
 import type { Config } from './config';
 import { MediaLibrary } from './library';
 import { Radio } from './radio';
 import { createSpecials } from './specials/index';
 import { StatusPoller } from './status-poller';
 import { TickerStore } from './ticker';
+import { moveToTrash } from './trash';
 import { uploadHandler } from './upload';
 
 export interface App {
@@ -75,6 +77,21 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
     }
   };
 
+  const handleReport = async (file: string, reason: string): Promise<void> => {
+    if (!memes.get(file)) return; // już zgłoszony / nieznany — ignorujemy
+    try {
+      await moveToTrash(config.mediaDir, file);
+    } catch (err) {
+      console.warn(`[report] nie udało się przenieść ${file} do kosza:`, err instanceof Error ? err.message : err);
+      return;
+    }
+    memes.remove(file);
+    radio.dropQueued(file);
+    const { item } = radio.stateMessage();
+    if ((item.kind === 'image' || item.kind === 'video') && item.name === file) radio.skip();
+    console.log(`[report] „${file}" zgłoszony: ${reason}`);
+  };
+
   wss.on('connection', (ws) => {
     ws.on('error', (err) => console.warn('[ws] client error:', err.message));
     ws.send(JSON.stringify(radio.stateMessage()));
@@ -99,6 +116,12 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
         ticker.add(msg.text);
       } else if (msg.type === 'removeTicker' && typeof msg.id === 'string') {
         ticker.remove(msg.id);
+      } else if (
+        msg.type === 'report' &&
+        typeof msg.file === 'string' &&
+        (REPORT_REASONS as readonly string[]).includes(msg.reason)
+      ) {
+        void handleReport(msg.file, msg.reason);
       }
     });
   });
