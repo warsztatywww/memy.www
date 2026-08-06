@@ -212,4 +212,23 @@ describe('app: zgłaszanie i skip', () => {
     expect(messages.filter((m) => m.type === 'state').length).toBeGreaterThan(count);
     ws.close();
   });
+
+  test('report mema, który akurat NIE gra, nie przerywa bieżącego odtwarzania', async () => {
+    await restartWithMemes('a.jpg', 'b.jpg');
+    const { ws, messages } = await openWs();
+    await wait(200);
+    const before = messages.filter((m) => m.type === 'state').at(-1);
+    if (before?.type !== 'state') throw new Error('brak state');
+    const playing = before.item.name;
+    const other = playing === 'a.jpg' ? 'b.jpg' : 'a.jpg';
+    ws.send(JSON.stringify({ type: 'report', file: other, reason: 'To nie jest mem' }));
+    await wait(300);
+    expect(existsSync(join(dir, 'media', 'trash', other))).toBe(true);
+    expect(existsSync(join(dir, 'media', other))).toBe(false);
+    const after = messages.filter((m) => m.type === 'state').at(-1);
+    if (after?.type !== 'state') throw new Error('brak state');
+    expect(after.item.name).toBe(playing); // bieżące odtwarzanie się nie zmieniło
+    expect(after.startedAt).toBe(before.startedAt); // ani nie zrestartowało (brak skip)
+    ws.close();
+  });
 });
