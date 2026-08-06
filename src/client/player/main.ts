@@ -107,6 +107,8 @@ function showVideo(state: StateMessage): void {
     videoError.textContent = state.item.name ?? '';
     videoError.classList.remove('hidden');
   };
+  // filmy-memy grają bez dźwięku; audio mają tylko reklamy
+  video.muted = state.item.kind !== 'ad';
   video.src = state.item.url!;
   video.addEventListener(
     'loadedmetadata',
