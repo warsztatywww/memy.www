@@ -1,4 +1,4 @@
-import type { HistoryEntry, ItemKind, StateMessage } from '../../shared/types';
+import type { HistoryEntry, ItemKind, StateMessage, TickerItem } from '../../shared/types';
 import { connect } from '../lib/connection';
 
 const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel)!;
@@ -7,6 +7,9 @@ const historyList = $<HTMLUListElement>('#history');
 const playAdBtn = $<HTMLButtonElement>('#play-ad');
 const stopAdBtn = $<HTMLButtonElement>('#stop-ad');
 const limitInput = $<HTMLInputElement>('#limit');
+const tickerForm = $<HTMLFormElement>('#ticker-form');
+const tickerText = $<HTMLInputElement>('#ticker-text');
+const tickerList = $<HTMLUListElement>('#ticker-list');
 
 const KIND_LABEL: Record<ItemKind, string> = {
   image: 'mem', video: 'wideo', ad: 'reklama', special: 'tryb specjalny', idle: 'bezczynność',
@@ -17,6 +20,7 @@ const KIND_ICON: Record<ItemKind, string> = {
 
 let state: StateMessage | null = null;
 let history: HistoryEntry[] = [];
+let ticker: TickerItem[] = [];
 
 limitInput.value = localStorage.getItem('memiarka-limit') ?? '20';
 limitInput.addEventListener('change', () => {
@@ -31,11 +35,23 @@ const conn = connect((msg) => {
   } else if (msg.type === 'history') {
     history = msg.entries;
     renderHistory();
+  } else if (msg.type === 'ticker') {
+    ticker = msg.messages;
+    renderTicker();
   }
+  // 'status' — w panelu ignorowane
 });
 
 playAdBtn.addEventListener('click', () => conn.send({ type: 'playAd' }));
 stopAdBtn.addEventListener('click', () => conn.send({ type: 'stopAd' }));
+
+tickerForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = tickerText.value.trim();
+  if (!text) return;
+  conn.send({ type: 'addTicker', text });
+  tickerText.value = '';
+});
 
 function thumb(kind: ItemKind, url?: string): HTMLElement {
   if (kind === 'image' && url) {
@@ -103,6 +119,24 @@ function renderHistory(): void {
       time.className = 'time';
       time.textContent = new Date(e.playedAt).toLocaleTimeString('pl-PL');
       li.append(meta, time);
+      return li;
+    }),
+  );
+}
+
+function renderTicker(): void {
+  tickerList.replaceChildren(
+    ...ticker.map((m) => {
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = m.text;
+      const del = document.createElement('button');
+      del.className = 'ticker-remove';
+      del.textContent = '✕';
+      del.title = 'Usuń komunikat';
+      del.addEventListener('click', () => conn.send({ type: 'removeTicker', id: m.id }));
+      li.append(name, del);
       return li;
     }),
   );

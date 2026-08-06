@@ -19,6 +19,14 @@
       <button id="stop-ad" disabled>Przerwij odtwarzanie reklamy</button>
     </div>
   </section>
+  <section id="ticker-section">
+    <h2>Pasek informacyjny</h2>
+    <form id="ticker-form">
+      <input id="ticker-text" type="text" maxlength="500" placeholder="treść komunikatu…" autocomplete="off">
+      <button type="submit">Dodaj</button>
+    </form>
+    <ul id="ticker-list"></ul>
+  </section>
   <section id="history-section">
     <h2>Historia <label>pokaż ostatnie <input id="limit" type="number" min="1" value="20"> </label></h2>
     <ul id="history"></ul>
