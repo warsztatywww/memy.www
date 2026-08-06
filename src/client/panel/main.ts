@@ -8,6 +8,7 @@ const nowContent = $('#now-content');
 const historyList = $<HTMLUListElement>('#history');
 const playAdBtn = $<HTMLButtonElement>('#play-ad');
 const skipBtn = $<HTMLButtonElement>('#skip');
+const autoAdsBox = $<HTMLInputElement>('#auto-ads');
 const limitInput = $<HTMLInputElement>('#limit');
 const tickerForm = $<HTMLFormElement>('#ticker-form');
 const tickerText = $<HTMLInputElement>('#ticker-text');
@@ -53,6 +54,7 @@ const conn = connect((msg) => {
 
 playAdBtn.addEventListener('click', () => conn.send({ type: 'playAd' }));
 skipBtn.addEventListener('click', () => conn.send({ type: 'skip' }));
+autoAdsBox.addEventListener('change', () => conn.send({ type: 'setAutoAds', enabled: autoAdsBox.checked }));
 
 tickerForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -129,6 +131,7 @@ function renderNow(): void {
   }
   playAdBtn.disabled = !state.adsAvailable;
   skipBtn.disabled = state.item.kind === 'idle';
+  autoAdsBox.checked = state.autoAds;
 }
 
 function renderHistory(): void {
