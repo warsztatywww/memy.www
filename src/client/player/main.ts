@@ -251,6 +251,7 @@ if (preview) {
       newMem: false,
       serverNow: Date.now(),
       adsAvailable: false,
+      autoAds: true,
     };
     apply(fakeState);
   }

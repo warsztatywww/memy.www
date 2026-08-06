@@ -22,6 +22,7 @@ interface RadioDeps {
   getSpecialData: (id: string) => unknown;
   config: RadioConfig;
   rng?: () => number;
+  autoAds?: boolean;
 }
 
 interface CurrentState {
@@ -53,6 +54,7 @@ export class Radio extends EventEmitter {
   private onMemeRemoved?: () => void;
   private onAdAdded?: () => void;
   private onAdRemoved?: () => void;
+  private autoAds: boolean;
 
   constructor(deps: RadioDeps) {
     super();
@@ -62,6 +64,7 @@ export class Radio extends EventEmitter {
     this.getSpecialData = deps.getSpecialData;
     this.config = deps.config;
     this.rng = deps.rng ?? Math.random;
+    this.autoAds = deps.autoAds ?? true;
     this.memeBag = new ShuffleBag<string>(this.rng);
     this.adBag = new ShuffleBag<string>(this.rng);
   }
@@ -97,6 +100,7 @@ export class Radio extends EventEmitter {
       ...this.current,
       serverNow: Date.now(),
       adsAvailable: this.adBag.size > 0,
+      autoAds: this.autoAds,
     };
   }
 
@@ -107,6 +111,12 @@ export class Radio extends EventEmitter {
   playAdNow(): void {
     const item = this.nextAd();
     if (item) this.playMedia(item, { ad: true });
+  }
+
+  setAutoAds(enabled: boolean): void {
+    if (this.autoAds === enabled) return;
+    this.autoAds = enabled;
+    this.emit('update');
   }
 
   skip(): void {
@@ -154,7 +164,7 @@ export class Radio extends EventEmitter {
       // brak snapshotu — slajd pominięty w tej rundzie, interwał zakolejkuje następny
     }
 
-    if (this.memesSinceAd >= this.config.adInterval) {
+    if (this.autoAds && this.memesSinceAd >= this.config.adInterval) {
       const ad = this.nextAd();
       if (ad) return this.playMedia(ad, { ad: true });
     }

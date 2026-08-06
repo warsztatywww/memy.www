@@ -17,6 +17,7 @@ export interface StateMessage {
   newMem: boolean;
   serverNow: number;
   adsAvailable: boolean;
+  autoAds: boolean;
 }
 
 export interface HistoryEntry {

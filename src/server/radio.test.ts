@@ -33,6 +33,7 @@ function setup(opts: {
   specials?: SpecialSlot[];
   getSpecialData?: (id: string) => unknown;
   config?: Partial<RadioConfig>;
+  autoAds?: boolean;
 } = {}) {
   const memes = new FakeSource(opts.memes ?? []);
   const ads = new FakeSource(opts.ads ?? []);
@@ -43,6 +44,7 @@ function setup(opts: {
     getSpecialData: opts.getSpecialData ?? ((id) => ({ d: id })),
     config: { ...CONFIG, ...opts.config },
     rng: mulberry32(42),
+    autoAds: opts.autoAds,
   });
   const states: StateMessage[] = [];
   radio.on('update', () => states.push(radio.stateMessage()));
@@ -336,6 +338,82 @@ describe('Radio: komendy panelu', () => {
     const count = states.length;
     radio.skip();
     expect(states.length).toBe(count);
+    radio.stop();
+  });
+});
+
+describe('Radio: automatyczne reklamy (autoAds)', () => {
+  test('stateMessage zawiera autoAds, domyślnie true', () => {
+    const { radio } = setup({ memes: [img('a.jpg')] });
+    radio.start();
+    expect(radio.stateMessage().autoAds).toBe(true);
+    radio.stop();
+  });
+
+  test('wyłączony automat: same memy mimo przekroczenia adInterval', async () => {
+    const { radio, states } = setup({
+      memes: [img('a.jpg'), img('b.jpg'), img('c.jpg'), img('d.jpg')],
+      ads: [vid('r.mp4', 5_000)],
+      autoAds: false,
+    });
+    radio.start();
+    await vi.advanceTimersByTimeAsync(80_000); // adInterval=3 dawno przekroczony
+    expect(states.every((s) => s.item.kind === 'image')).toBe(true);
+    radio.stop();
+  });
+
+  test('ponowne włączenie → reklama w najbliższym slocie (licznik rósł)', async () => {
+    const { radio, states } = setup({
+      memes: [img('a.jpg'), img('b.jpg'), img('c.jpg'), img('d.jpg')],
+      ads: [vid('r.mp4', 5_000)],
+      autoAds: false,
+    });
+    radio.start();
+    await vi.advanceTimersByTimeAsync(40_000); // 5 memów, memesSinceAd >= 3
+    radio.setAutoAds(true);
+    await vi.advanceTimersByTimeAsync(10_001); // koniec bieżącego mema → slot
+    expect(states.at(-1)!.item.kind).toBe('ad');
+    radio.stop();
+  });
+
+  test('setAutoAds emituje update przy zmianie; ta sama wartość = no-op', () => {
+    const { radio, states } = setup({ memes: [img('a.jpg')] });
+    radio.start();
+    const count = states.length;
+    radio.setAutoAds(false);
+    expect(states.length).toBe(count + 1);
+    expect(states.at(-1)!.autoAds).toBe(false);
+    radio.setAutoAds(false);
+    expect(states.length).toBe(count + 1);
+    radio.stop();
+  });
+
+  test('wyłączenie w trakcie grającej reklamy nie przerywa jej', async () => {
+    const { radio, states } = setup({
+      memes: [img('a.jpg')],
+      ads: [vid('r.mp4', 20_000)],
+      config: { adInterval: 1 },
+    });
+    radio.start(); // mem (10s) → reklama (20s)
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(states.at(-1)!.item.kind).toBe('ad');
+    const { startedAt } = states.at(-1)!;
+    radio.setAutoAds(false);
+    expect(states.at(-1)!.item.kind).toBe('ad'); // nadal gra ta sama reklama
+    expect(states.at(-1)!.startedAt).toBe(startedAt);
+    radio.stop();
+  });
+
+  test('playAdNow działa przy wyłączonym automacie', () => {
+    const { radio, states } = setup({
+      memes: [img('a.jpg')],
+      ads: [vid('r.mp4', 5_000)],
+      autoAds: false,
+      config: { adInterval: 99 },
+    });
+    radio.start();
+    radio.playAdNow();
+    expect(states.at(-1)!.item).toMatchObject({ kind: 'ad', url: '/ads/r.mp4' });
     radio.stop();
   });
 });
