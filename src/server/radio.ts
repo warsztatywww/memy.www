@@ -109,8 +109,8 @@ export class Radio extends EventEmitter {
     if (item) this.playMedia(item, { ad: true });
   }
 
-  stopAd(): void {
-    if (this.current.item.kind !== 'ad') return;
+  skip(): void {
+    if (this.current.item.kind === 'idle') return;
     this.advance();
   }
 

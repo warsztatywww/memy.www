@@ -55,13 +55,13 @@ export type ServerMessage = StateMessage | HistoryMessage | PongMessage | Status
 
 export interface PingMessage { type: 'ping'; t0: number; }
 export interface PlayAdMessage { type: 'playAd'; }
-export interface StopAdMessage { type: 'stopAd'; }
+export interface SkipMessage { type: 'skip'; }
 export interface AddTickerMessage { type: 'addTicker'; text: string; }
 export interface RemoveTickerMessage { type: 'removeTicker'; id: string; }
 export type ClientMessage =
   | PingMessage
   | PlayAdMessage
-  | StopAdMessage
+  | SkipMessage
   | AddTickerMessage
   | RemoveTickerMessage;
 

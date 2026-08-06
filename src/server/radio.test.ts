@@ -275,20 +275,51 @@ describe('Radio: komendy panelu', () => {
     radio.stop();
   });
 
-  test('stopAd przerywa tylko reklamę; kolejka nowych memów ma pierwszeństwo', async () => {
+  test('skip przerywa mema', async () => {
+    const { radio, states } = setup({ memes: [img('a.jpg'), img('b.jpg')], config: { adInterval: 99 } });
+    radio.start();
+    const count = states.length;
+    radio.skip();
+    expect(states.length).toBe(count + 1);
+    expect(states.at(-1)!.item.kind).toBe('image');
+    radio.stop();
+  });
+
+  test('skip przerywa tryb specjalny', async () => {
+    const { radio, states } = setup({
+      memes: [img('a.jpg')],
+      specials: [{ id: 'x', duration: 15_000 }],
+      config: { adInterval: 99, specialIntervalMs: 5_000 },
+    });
+    radio.start();
+    await vi.advanceTimersByTimeAsync(10_001); // mem skończony → special
+    expect(states.at(-1)!.item.kind).toBe('special');
+    radio.skip();
+    expect(states.at(-1)!.item.kind).toBe('image');
+    radio.stop();
+  });
+
+  test('skip przerywa reklamę; kolejka nowych memów ma pierwszeństwo', async () => {
     const { radio, memes, states } = setup({
       memes: [img('a.jpg')],
       ads: [vid('r.mp4', 60_000)],
       config: { adInterval: 99 },
     });
     radio.start();
-    radio.stopAd(); // gra mem — no-op
-    expect(states.at(-1)!.item.kind).toBe('image');
     radio.playAdNow();
     expect(states.at(-1)!.item.kind).toBe('ad');
     memes.add(img('swiezak.jpg')); // do kolejki
-    radio.stopAd();
+    radio.skip();
     expect(states.at(-1)!).toMatchObject({ newMem: true, item: { name: 'swiezak.jpg' } });
+    radio.stop();
+  });
+
+  test('skip przy idle = no-op', () => {
+    const { radio, states } = setup();
+    radio.start();
+    const count = states.length;
+    radio.skip();
+    expect(states.length).toBe(count);
     radio.stop();
   });
 });

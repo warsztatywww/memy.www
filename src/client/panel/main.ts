@@ -6,7 +6,7 @@ const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel)
 const nowContent = $('#now-content');
 const historyList = $<HTMLUListElement>('#history');
 const playAdBtn = $<HTMLButtonElement>('#play-ad');
-const stopAdBtn = $<HTMLButtonElement>('#stop-ad');
+const skipBtn = $<HTMLButtonElement>('#skip');
 const limitInput = $<HTMLInputElement>('#limit');
 const tickerForm = $<HTMLFormElement>('#ticker-form');
 const tickerText = $<HTMLInputElement>('#ticker-text');
@@ -44,7 +44,7 @@ const conn = connect((msg) => {
 });
 
 playAdBtn.addEventListener('click', () => conn.send({ type: 'playAd' }));
-stopAdBtn.addEventListener('click', () => conn.send({ type: 'stopAd' }));
+skipBtn.addEventListener('click', () => conn.send({ type: 'skip' }));
 
 tickerForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -92,7 +92,7 @@ function renderNow(): void {
     nowContent.append(meta);
   }
   playAdBtn.disabled = !state.adsAvailable;
-  stopAdBtn.disabled = state.item.kind !== 'ad';
+  skipBtn.disabled = state.item.kind === 'idle';
 }
 
 function renderHistory(): void {

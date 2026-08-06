@@ -93,8 +93,8 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
         ws.send(JSON.stringify({ type: 'pong', t0: msg.t0, serverTime: Date.now() }));
       } else if (msg.type === 'playAd') {
         radio.playAdNow();
-      } else if (msg.type === 'stopAd') {
-        radio.stopAd();
+      } else if (msg.type === 'skip') {
+        radio.skip();
       } else if (msg.type === 'addTicker' && typeof msg.text === 'string') {
         ticker.add(msg.text);
       } else if (msg.type === 'removeTicker' && typeof msg.id === 'string') {
