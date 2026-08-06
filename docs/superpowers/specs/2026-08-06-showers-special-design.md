@@ -43,13 +43,14 @@ slajd zacznie pokazywać zajętość bez innych zmian.
 
 ## Konfiguracja
 
-- `HA_TOKEN` — nowa zmienna env w `config.ts`, z domyślną wartością wpisaną na
-  stałe (token dostarczony przez użytkownika), żeby dev działał bez konfiguracji.
-- `docker-compose.yml` dostaje `environment: HA_TOKEN: <ten sam token>` jako
-  widoczne miejsce podmiany. Bez pliku `.env` (świadoma decyzja użytkownika —
-  token trafia do repo).
-- `HA_TOKEN` ustawiony na pusty string → tryb `showers` nie jest rejestrowany.
-- Wpis w tabeli env w README.
+- `HA_TOKEN` — nowa wymagana zmienna env w `config.ts`, bez wartości domyślnej.
+  Brak / pusty string → `loadConfig()` rzuca błąd przy starcie serwera.
+- Token ustawiany wyłącznie w `docker-compose.yml`:
+  `environment: HA_TOKEN: <token dostarczony przez użytkownika>`. Bez pliku
+  `.env` (świadoma decyzja użytkownika — token trafia do repo).
+- W dev (`npm run dev`) trzeba ustawić `HA_TOKEN` w środowisku, inaczej serwer
+  nie wystartuje.
+- Wpis w tabeli env w README (oznaczony jako wymagany).
 
 ## Typy (`src/shared/types.ts`)
 
@@ -78,10 +79,9 @@ export interface ShowersData {
   `SpecialMode { id: 'showers', duration: 15_000, fetchData }`.
 - `fetchData()` pobiera `/api/states`, buduje mapę `entity_id → state`,
   mapuje na `ShowersData` wg tabeli powyżej.
-- Rejestracja w `src/server/specials/index.ts` warunkowo (token niepusty).
-  Rejestr dostaje token z `config.ts` — jeśli obecna struktura buduje listę
-  na poziomie modułu, dopuszczalna drobna zmiana: rejestr jako funkcja
-  przyjmująca config.
+- Rejestracja w `src/server/specials/index.ts` bezwarunkowa. Rejestr dostaje
+  token z `config.ts` — jeśli obecna struktura buduje listę na poziomie
+  modułu, dopuszczalna drobna zmiana: rejestr jako funkcja przyjmująca config.
 
 ## Klient (`src/client/specials/showers.ts`)
 
@@ -120,7 +120,7 @@ Wzorem `pantry.test.ts`, fake `fetchFn`:
 - obecna encja obecności `on`/`off` → `occupied`/`free`;
 - stan `unavailable` → `unknown`;
 - błąd HTTP / wyjątek (timeout) → wszystkie pola `unknown`;
-- (config) pusty `HA_TOKEN` → tryb nierejestrowany.
+- (config) brak / pusty `HA_TOKEN` → `loadConfig()` rzuca błąd.
 
 ## Poza zakresem
 
