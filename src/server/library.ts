@@ -3,9 +3,7 @@ import { readdir } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
 import { probeDuration } from './ffprobe';
-
-const IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
-const VIDEO_EXT = new Set(['.mp4', '.webm']);
+import { IMAGE_EXT, VIDEO_EXT } from '../shared/media-ext';
 
 export interface MediaItem {
   file: string;
