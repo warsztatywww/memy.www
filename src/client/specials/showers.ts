@@ -32,7 +32,7 @@ export const showersSpecial: ClientSpecial = {
     ctx.fillText('qWWWη', w / 2, h * 0.1);
     ctx.fillStyle = '#99aabb';
     ctx.font = `${h * 0.035}px system-ui, sans-serif`;
-    ctx.fillText('STATUS PRYSZNICÓW („kuweta")', w / 2, h * 0.18);
+    ctx.fillText('STATUS PRYSZNICÓW', w / 2, h * 0.18);
 
     const top = h * 0.26;
     const bottom = h * 0.9;
