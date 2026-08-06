@@ -41,6 +41,12 @@
     <h2>Historia <label>pokaż ostatnie <input id="limit" type="number" min="1" value="20"> </label></h2>
     <ul id="history"></ul>
   </section>
+  <dialog id="report-dialog">
+    <h2>Zgłoś mema</h2>
+    <p id="report-file"></p>
+    <div id="report-reasons"></div>
+    <button id="report-cancel" type="button">Anuluj</button>
+  </dialog>
   <div id="drop-overlay" hidden>upuść, by wrzucić mema</div>
   <script type="module" src="./panel/main.ts"></script>
 </body>

@@ -1,4 +1,5 @@
 import type { HistoryEntry, ItemKind, StateMessage, TickerItem } from '../../shared/types';
+import { REPORT_REASONS } from '../../shared/types';
 import { connect } from '../lib/connection';
 import './upload';
 
@@ -11,6 +12,13 @@ const limitInput = $<HTMLInputElement>('#limit');
 const tickerForm = $<HTMLFormElement>('#ticker-form');
 const tickerText = $<HTMLInputElement>('#ticker-text');
 const tickerList = $<HTMLUListElement>('#ticker-list');
+
+const reportDialog = $<HTMLDialogElement>('#report-dialog');
+const reportFileEl = $('#report-file');
+const reportReasons = $('#report-reasons');
+const reportCancel = $<HTMLButtonElement>('#report-cancel');
+
+let reportedFile = '';
 
 const KIND_LABEL: Record<ItemKind, string> = {
   image: 'mem', video: 'wideo', ad: 'reklama', special: 'tryb specjalny', idle: 'bezczynność',
@@ -54,6 +62,32 @@ tickerForm.addEventListener('submit', (e) => {
   tickerText.value = '';
 });
 
+for (const reason of REPORT_REASONS) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = reason;
+  btn.addEventListener('click', () => {
+    conn.send({ type: 'report', file: reportedFile, reason });
+    reportDialog.close();
+  });
+  reportReasons.append(btn);
+}
+reportCancel.addEventListener('click', () => reportDialog.close());
+
+// Guzik „Zgłoś" tylko dla memów (image/video) — nie dla reklam i trybów specjalnych.
+function reportButton(kind: ItemKind, name: string | undefined): HTMLButtonElement | null {
+  if ((kind !== 'image' && kind !== 'video') || !name) return null;
+  const btn = document.createElement('button');
+  btn.className = 'report-btn';
+  btn.textContent = 'Zgłoś';
+  btn.addEventListener('click', () => {
+    reportedFile = name;
+    reportFileEl.textContent = name;
+    reportDialog.showModal();
+  });
+  return btn;
+}
+
 function thumb(kind: ItemKind, url?: string): HTMLElement {
   if (kind === 'image' && url) {
     const el = document.createElement('img');
@@ -90,6 +124,8 @@ function renderNow(): void {
       meta.append(badge);
     }
     nowContent.append(meta);
+    const rb = reportButton(item.kind, item.name);
+    if (rb) nowContent.append(rb);
   }
   playAdBtn.disabled = !state.adsAvailable;
   skipBtn.disabled = state.item.kind === 'idle';
@@ -119,7 +155,8 @@ function renderHistory(): void {
       const time = document.createElement('span');
       time.className = 'time';
       time.textContent = new Date(e.playedAt).toLocaleTimeString('pl-PL');
-      li.append(meta, time);
+      const rb = reportButton(e.kind, e.name);
+      li.append(meta, time, ...(rb ? [rb] : []));
       return li;
     }),
   );
