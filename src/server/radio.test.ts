@@ -322,4 +322,20 @@ describe('Radio: komendy panelu', () => {
     expect(states.length).toBe(count);
     radio.stop();
   });
+
+  test('dropQueued usuwa mem z kolejki nowych', async () => {
+    const { radio, memes, states } = setup({
+      memes: [img('a.jpg')],
+      ads: [vid('r.mp4', 20_000)],
+      config: { adInterval: 1 },
+    });
+    radio.start(); // mem a (10s) → reklama (20s)
+    await vi.advanceTimersByTimeAsync(15_000); // w trakcie reklamy
+    memes.add(img('q1.jpg'));
+    memes.add(img('q2.jpg'));
+    radio.dropQueued('q1.jpg');
+    await vi.advanceTimersByTimeAsync(15_001); // koniec reklamy → q2 (q1 wypadł)
+    expect(states.at(-1)!).toMatchObject({ newMem: true, item: { name: 'q2.jpg' } });
+    radio.stop();
+  });
 });

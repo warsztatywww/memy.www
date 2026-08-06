@@ -114,6 +114,10 @@ export class Radio extends EventEmitter {
     this.advance();
   }
 
+  dropQueued(file: string): void {
+    this.newMemQueue = this.newMemQueue.filter((i) => i.file !== file);
+  }
+
   private syncBags(): void {
     this.memeBag.setItems(this.memes.items().map((i) => i.file));
     this.adBag.setItems(this.ads.items().map((i) => i.file));
