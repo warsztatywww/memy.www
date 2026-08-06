@@ -138,7 +138,18 @@ function showSpecial(state: StateMessage): void {
 const TICKER_SPEED_PX_S = 120; // stała prędkość — dłuższa treść przewija się dłużej
 const TICKER_SEP = '  •  '; // spacje nierozdzielające — nie kolapsują się w HTML
 
+const TICKER_RESIZE_DEBOUNCE_MS = 200;
+let lastTicker: TickerItem[] = [];
+let tickerResizeTimer: ReturnType<typeof setTimeout> | undefined;
+
+// Zmiana rozmiaru okna może zmienić tryb statyczny/przewijany — przelicz po ustaniu resize'u.
+window.addEventListener('resize', () => {
+  clearTimeout(tickerResizeTimer);
+  tickerResizeTimer = setTimeout(() => renderTicker(lastTicker), TICKER_RESIZE_DEBOUNCE_MS);
+});
+
 function renderTicker(messages: TickerItem[]): void {
+  lastTicker = messages;
   if (messages.length === 0) {
     tickerBar.classList.add('hidden');
     return;
