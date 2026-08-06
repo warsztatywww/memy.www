@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { resolve } from 'node:path';
 import { loadConfig } from './config';
 
 describe('loadConfig', () => {
@@ -28,5 +29,19 @@ describe('loadConfig', () => {
   test('brak lub pusty HA_TOKEN → błąd startu', () => {
     expect(() => loadConfig({})).toThrow(/HA_TOKEN/);
     expect(() => loadConfig({ HA_TOKEN: '   ' })).toThrow(/HA_TOKEN/);
+  });
+});
+
+describe('status i dane trwałe', () => {
+  test('domyślne statusIntervalMs=5000 i dataDir=./data', () => {
+    const c = loadConfig({ HA_TOKEN: 't' });
+    expect(c.statusIntervalMs).toBe(5000);
+    expect(c.dataDir).toBe(resolve('./data'));
+  });
+
+  test('STATUS_INTERVAL i DATA_DIR z env', () => {
+    const c = loadConfig({ HA_TOKEN: 't', STATUS_INTERVAL: '10', DATA_DIR: '/tmp/memiarka-dane' });
+    expect(c.statusIntervalMs).toBe(10_000);
+    expect(c.dataDir).toBe('/tmp/memiarka-dane');
   });
 });

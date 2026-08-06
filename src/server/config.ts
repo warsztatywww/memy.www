@@ -9,6 +9,8 @@ export interface Config {
   specialIntervalMs: number;
   historySize: number;
   haToken: string;
+  statusIntervalMs: number;
+  dataDir: string;
 }
 
 function num(v: string | undefined, fallback: number): number {
@@ -30,5 +32,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     specialIntervalMs: num(env.SPECIAL_INTERVAL, 300) * 1000,
     historySize: num(env.HISTORY_SIZE, 50),
     haToken,
+    statusIntervalMs: num(env.STATUS_INTERVAL, 5) * 1000,
+    dataDir: resolve(env.DATA_DIR ?? './data'),
   };
 }
