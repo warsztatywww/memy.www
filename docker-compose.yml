@@ -1,13 +1,18 @@
+version: '3'
+
 services:
   memiarka:
     build: .
-    ports:
-      - "8080:8080"
+    restart: unless-stopped
     volumes:
-      - ./memy:/media
-      - ./reklamy:/ads
+      - /mnt/internet.www/memy.www:/media
+      - /mnt/internet.www/youtube.com:/ads
       - ./data:/data
     environment:
       # token Home Assistanta (smart.www22.duck.edu.pl) — wymagany
       HA_TOKEN: "REDACTED_HA_TOKEN"
-    restart: unless-stopped
+      AD_INTERVAL: 100  # memów
+      SPECIAL_INTERVAL: 120  # s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.memiarka.rule=Host(`memy.www22.duck.edu.pl`)
