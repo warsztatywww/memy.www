@@ -7,7 +7,7 @@ import type { ClientMessage, HistoryMessage } from '../shared/types';
 import type { Config } from './config';
 import { MediaLibrary } from './library';
 import { Radio } from './radio';
-import { specials } from './specials/index';
+import { createSpecials } from './specials/index';
 
 export interface App {
   server: http.Server;
@@ -26,7 +26,7 @@ export async function createApp(config: Config): Promise<App> {
   const radio = new Radio({
     memes,
     ads,
-    specials,
+    specials: createSpecials(config.haToken),
     config: {
       imageDurationMs: config.imageDurationMs,
       adInterval: config.adInterval,

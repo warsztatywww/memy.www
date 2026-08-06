@@ -1,4 +1,5 @@
 import { createPantrySpecial } from './pantry';
+import { createShowersSpecial } from './showers';
 
 export interface SpecialMode {
   id: string;
@@ -8,4 +9,6 @@ export interface SpecialMode {
 
 // Nowy tryb = nowy plik w tym katalogu + wpis tutaj
 // (+ odpowiednik kliencki w src/client/specials/).
-export const specials: SpecialMode[] = [createPantrySpecial()];
+export function createSpecials(haToken: string): SpecialMode[] {
+  return [createPantrySpecial(), createShowersSpecial(haToken)];
+}
