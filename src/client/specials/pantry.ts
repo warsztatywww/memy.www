@@ -23,7 +23,7 @@ export const pantrySpecial: ClientSpecial = {
     ctx.fillStyle = '#101018';
     ctx.fillRect(0, 0, w, h);
 
-    const anyOut = data !== null && ROWS.some((r) => data[r.key].status === 'out');
+    const anyOut = data != null && ROWS.some((r) => data[r.key].status === 'out');
     ctx.save();
     if (anyOut) ctx.translate(Math.sin(t / 30) * 6, Math.cos(t / 37) * 6);
 

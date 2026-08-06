@@ -44,6 +44,10 @@ export class Radio extends EventEmitter {
   private specialIndex = 0;
   private endTimer: ReturnType<typeof setTimeout> | undefined;
   private specialTimer: ReturnType<typeof setInterval> | undefined;
+  private onMemeAdded?: (item: MediaItem) => void;
+  private onMemeRemoved?: () => void;
+  private onAdAdded?: () => void;
+  private onAdRemoved?: () => void;
 
   constructor(deps: RadioDeps) {
     super();
@@ -58,10 +62,14 @@ export class Radio extends EventEmitter {
 
   start(): void {
     this.syncBags();
-    this.memes.on('added', (item: MediaItem) => this.onNewMeme(item));
-    this.memes.on('removed', () => this.syncBags());
-    this.ads.on('added', () => { this.syncBags(); this.emit('update'); });
-    this.ads.on('removed', () => { this.syncBags(); this.emit('update'); });
+    this.onMemeAdded = (item: MediaItem) => this.onNewMeme(item);
+    this.onMemeRemoved = () => this.syncBags();
+    this.onAdAdded = () => { this.syncBags(); this.emit('update'); };
+    this.onAdRemoved = () => { this.syncBags(); this.emit('update'); };
+    this.memes.on('added', this.onMemeAdded);
+    this.memes.on('removed', this.onMemeRemoved);
+    this.ads.on('added', this.onAdAdded);
+    this.ads.on('removed', this.onAdRemoved);
     if (this.specials.length > 0) {
       this.specialTimer = setInterval(() => this.prefetchSpecial(), this.config.specialIntervalMs);
     }
@@ -71,6 +79,10 @@ export class Radio extends EventEmitter {
   stop(): void {
     clearTimeout(this.endTimer);
     clearInterval(this.specialTimer);
+    if (this.onMemeAdded) this.memes.off('added', this.onMemeAdded);
+    if (this.onMemeRemoved) this.memes.off('removed', this.onMemeRemoved);
+    if (this.onAdAdded) this.ads.off('added', this.onAdAdded);
+    if (this.onAdRemoved) this.ads.off('removed', this.onAdRemoved);
   }
 
   stateMessage(): StateMessage {
