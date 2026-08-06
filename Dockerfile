@@ -14,6 +14,6 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/src/server ./src/server
 COPY --from=build /app/src/shared ./src/shared
 COPY --from=build /app/package.json ./
-ENV NODE_ENV=production PORT=8080 MEDIA_DIR=/media ADS_DIR=/ads
+ENV NODE_ENV=production PORT=8080 MEDIA_DIR=/media ADS_DIR=/ads DATA_DIR=/data
 EXPOSE 8080
 CMD ["npx", "tsx", "src/server/main.ts"]

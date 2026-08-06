@@ -4,3 +4,4 @@ media/*
 !media/.gitkeep
 ads/*
 !ads/.gitkeep
+data/

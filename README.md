@@ -24,7 +24,7 @@ Nowy plik w `./media` przerywa odtwarzanie i leci z banerem „NOWY MEM!"
 docker compose up -d --build
 ```
 
-`docker-compose.yml` montuje `./memy` → `/media` i `./reklamy` → `/ads`.
+`docker-compose.yml` montuje `./memy` → `/media`, `./reklamy` → `/ads` i `./data` → `/data`.
 
 ## Konfiguracja (env)
 
@@ -38,6 +38,8 @@ docker compose up -d --build
 | `AD_INTERVAL` | `10` | reklama co N elementów |
 | `SPECIAL_INTERVAL` | `300` | interwał trybów specjalnych (s) |
 | `HISTORY_SIZE` | `50` | rozmiar historii w panelu |
+| `STATUS_INTERVAL` | `5` | interwał odświeżania pasków statusu (s) |
+| `DATA_DIR` | `./data` | katalog danych trwałych (komunikaty tickera) |
 
 ## Tryby specjalne
 
@@ -46,6 +48,16 @@ Tryb = para modułów o wspólnym `id`:
 `src/client/specials/<id>.ts` (`render(ctx, t, w, h, data, rng)` — deterministyczna
 animacja canvas) + wpis w obu rejestrach (`specials/index.ts`).
 Podgląd bez czekania na interwał: `http://localhost:8080/player?preview=<id>`.
+
+## Paski w playerze
+
+Górny pasek to przewijany ticker — komunikaty dodaje się i usuwa w panelu
+(sekcja „Pasek informacyjny"); lista jest trwała (`DATA_DIR/ticker.json`),
+pusta lista ukrywa pasek. Dolny pasek pokazuje status zapasów (ser/mleko/chleb)
+i zajętość pryszniców — serwer odpytuje źródła co `STATUS_INTERVAL` sekund
+i wypycha zmiany do playerów po WebSockecie. Dopóki w Home Assistancie nie ma
+czujników obecności, zajętość prysznica zgaduje się ze stanu światła
+(„zajęty?"/„wolny?").
 
 ## Testy
 
