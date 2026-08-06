@@ -19,6 +19,16 @@
       <button id="stop-ad" disabled>Przerwij odtwarzanie reklamy</button>
     </div>
   </section>
+  <section id="upload-section">
+    <h2>Wrzuć mema</h2>
+    <div id="upload-dropzone">
+      <span>przeciągnij pliki tutaj albo</span>
+      <button id="upload-pick" type="button">Wybierz pliki</button>
+      <input id="upload-input" type="file" multiple hidden
+             accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.webm">
+    </div>
+    <ul id="upload-results"></ul>
+  </section>
   <section id="ticker-section">
     <h2>Pasek informacyjny</h2>
     <form id="ticker-form">
@@ -31,6 +41,7 @@
     <h2>Historia <label>pokaż ostatnie <input id="limit" type="number" min="1" value="20"> </label></h2>
     <ul id="history"></ul>
   </section>
+  <div id="drop-overlay" hidden>upuść, by wrzucić mema</div>
   <script type="module" src="./panel/main.ts"></script>
 </body>
 </html>

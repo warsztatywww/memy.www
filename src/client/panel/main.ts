@@ -1,5 +1,6 @@
 import type { HistoryEntry, ItemKind, StateMessage, TickerItem } from '../../shared/types';
 import { connect } from '../lib/connection';
+import './upload';
 
 const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel)!;
 const nowContent = $('#now-content');

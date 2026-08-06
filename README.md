@@ -14,7 +14,9 @@ HA_TOKEN=<token> npm run dev        # vite build --watch + tsx watch
 # player: http://localhost:8080/player
 ```
 
-Memy wrzucaj do `./media` (jpg/png/gif/webp/mp4/webm), reklamy (wideo) do `./ads`.
+Memy wrzucaj do `./media` (jpg/png/gif/webp/mp4/webm) — albo przez panel:
+drag&drop na stronę lub guzik „Wybierz pliki" w sekcji „Wrzuć mema".
+Reklamy (wideo) wrzucaj do `./ads`.
 Nowy plik w `./media` przerywa odtwarzanie i leci z banerem „NOWY MEM!"
 (chyba że gra reklama — wtedy zaraz po niej).
 
