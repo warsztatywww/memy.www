@@ -1,0 +1,9 @@
+services:
+  memiarka:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./memy:/media
+      - ./reklamy:/ads
+    restart: unless-stopped
