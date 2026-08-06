@@ -3,11 +3,20 @@ import http from 'node:http';
 import { join } from 'node:path';
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
-import type { ClientMessage, HistoryMessage } from '../shared/types';
+import type {
+  ClientMessage,
+  HistoryMessage,
+  PantryData,
+  ShowersData,
+  StatusMessage,
+  TickerMessage,
+} from '../shared/types';
 import type { Config } from './config';
 import { MediaLibrary } from './library';
 import { Radio } from './radio';
 import { createSpecials } from './specials/index';
+import { StatusPoller } from './status-poller';
+import { TickerStore } from './ticker';
 
 export interface App {
   server: http.Server;
@@ -15,7 +24,7 @@ export interface App {
   stop(): Promise<void>;
 }
 
-export async function createApp(config: Config): Promise<App> {
+export async function createApp(config: Config, opts: { fetchFn?: typeof fetch } = {}): Promise<App> {
   mkdirSync(config.mediaDir, { recursive: true });
   mkdirSync(config.adsDir, { recursive: true });
 
@@ -23,12 +32,15 @@ export async function createApp(config: Config): Promise<App> {
   const ads = new MediaLibrary(config.adsDir, { videosOnly: true });
   await Promise.all([memes.start(), ads.start()]);
 
+  const specials = createSpecials(config.haToken, opts.fetchFn);
+  const poller = new StatusPoller(specials, config.statusIntervalMs);
+  const ticker = new TickerStore(join(config.dataDir, 'ticker.json'));
+
   const radio = new Radio({
     memes,
     ads,
-    // TODO(Task 6): podłączyć StatusPoller — na razie slajdy specjalne są pomijane
-    specials: createSpecials(config.haToken).map(({ id, duration }) => ({ id, duration })),
-    getSpecialData: () => null,
+    specials: specials.map(({ id, duration }) => ({ id, duration })),
+    getSpecialData: (id) => poller.getData(id),
     config: {
       imageDurationMs: config.imageDurationMs,
       adInterval: config.adInterval,
@@ -48,6 +60,12 @@ export async function createApp(config: Config): Promise<App> {
   const wss = new WebSocketServer({ server, path: '/ws' });
 
   const historyMessage = (): HistoryMessage => ({ type: 'history', entries: radio.history() });
+  const tickerMessage = (): TickerMessage => ({ type: 'ticker', messages: ticker.messages() });
+  const statusMessage = (): StatusMessage | null => {
+    const pantry = poller.getData('pantry') as PantryData | null;
+    const showers = poller.getData('showers') as ShowersData | null;
+    return pantry && showers ? { type: 'status', pantry, showers } : null;
+  };
   const broadcast = (msg: unknown): void => {
     const raw = JSON.stringify(msg);
     for (const client of wss.clients) {
@@ -59,6 +77,9 @@ export async function createApp(config: Config): Promise<App> {
     ws.on('error', (err) => console.warn('[ws] client error:', err.message));
     ws.send(JSON.stringify(radio.stateMessage()));
     ws.send(JSON.stringify(historyMessage()));
+    ws.send(JSON.stringify(tickerMessage()));
+    const status = statusMessage();
+    if (status) ws.send(JSON.stringify(status));
     ws.on('message', (raw) => {
       let msg: ClientMessage;
       try {
@@ -72,6 +93,10 @@ export async function createApp(config: Config): Promise<App> {
         radio.playAdNow();
       } else if (msg.type === 'stopAd') {
         radio.stopAd();
+      } else if (msg.type === 'addTicker' && typeof msg.text === 'string') {
+        ticker.add(msg.text);
+      } else if (msg.type === 'removeTicker' && typeof msg.id === 'string') {
+        ticker.remove(msg.id);
       }
     });
   });
@@ -80,6 +105,12 @@ export async function createApp(config: Config): Promise<App> {
     broadcast(radio.stateMessage());
     broadcast(historyMessage());
   });
+  poller.on('update', () => {
+    const status = statusMessage();
+    if (status) broadcast(status);
+  });
+  ticker.on('update', () => broadcast(tickerMessage()));
+  poller.start();
   radio.start();
 
   let stopped = false;
@@ -91,6 +122,7 @@ export async function createApp(config: Config): Promise<App> {
       if (stopped) return;
       stopped = true;
       radio.stop();
+      poller.stop();
       for (const client of wss.clients) client.terminate();
       wss.close();
       await new Promise<void>((res) => server.close(() => res()));

@@ -14,8 +14,15 @@ let port: number;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'memiarka-app-'));
-  const config = loadConfig({ MEDIA_DIR: join(dir, 'media'), ADS_DIR: join(dir, 'ads'), PORT: '0', HA_TOKEN: 't' });
-  app = await createApp(config);
+  const config = loadConfig({
+    MEDIA_DIR: join(dir, 'media'),
+    ADS_DIR: join(dir, 'ads'),
+    DATA_DIR: join(dir, 'data'),
+    PORT: '0',
+    HA_TOKEN: 't',
+    STATUS_INTERVAL: '1',
+  });
+  app = await createApp(config, { fetchFn: async () => { throw new Error('offline w testach'); } });
   await new Promise<void>((res) => app.server.listen(0, res));
   port = (app.server.address() as AddressInfo).port;
 });
@@ -38,10 +45,10 @@ function openWs(): Promise<{ ws: WebSocket; messages: ServerMessage[] }> {
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 describe('app', () => {
-  test('po połączeniu klient dostaje state (idle) i history', async () => {
+  test('po połączeniu klient dostaje state (idle), history i ticker', async () => {
     const { ws, messages } = await openWs();
     await wait(200);
-    expect(messages.map((m) => m.type)).toEqual(['state', 'history']);
+    expect(messages.slice(0, 3).map((m) => m.type)).toEqual(['state', 'history', 'ticker']);
     const state = messages[0];
     if (state.type !== 'state') throw new Error('unreachable');
     expect(state.item.kind).toBe('idle');
@@ -83,5 +90,46 @@ describe('app', () => {
       ]),
     ).resolves.toBe('stopped');
     ws.close(); // sprzątanie po terminate i tak jest no-opem
+  });
+
+  test('status z pollera dociera do klienta (offline → statusy unknown)', async () => {
+    const { ws, messages } = await openWs();
+    await wait(500);
+    const status = messages.find((m) => m.type === 'status');
+    expect(status).toBeDefined();
+    if (status?.type !== 'status') throw new Error('unreachable');
+    expect(status.pantry.ser.status).toBe('unknown');
+    expect(status.showers.qwwwetek.light).toBe('unknown');
+    ws.close();
+  });
+
+  test('addTicker broadcastuje listę, removeTicker usuwa', async () => {
+    const { ws, messages } = await openWs();
+    await wait(100);
+    ws.send(JSON.stringify({ type: 'addTicker', text: '  Jutro grill!  ' }));
+    await wait(200);
+    let ticker = messages.filter((m) => m.type === 'ticker').at(-1);
+    if (ticker?.type !== 'ticker') throw new Error('brak ticker');
+    expect(ticker.messages.map((m) => m.text)).toEqual(['Jutro grill!']);
+    ws.send(JSON.stringify({ type: 'removeTicker', id: ticker.messages[0].id }));
+    await wait(200);
+    ticker = messages.filter((m) => m.type === 'ticker').at(-1);
+    if (ticker?.type !== 'ticker') throw new Error('brak ticker');
+    expect(ticker.messages).toEqual([]);
+    ws.close();
+  });
+
+  test('nowy klient dostaje aktualny ticker przy połączeniu', async () => {
+    const { ws } = await openWs();
+    await wait(100);
+    ws.send(JSON.stringify({ type: 'addTicker', text: 'trwały komunikat' }));
+    await wait(200);
+    const { ws: ws2, messages: m2 } = await openWs();
+    await wait(200);
+    const ticker = m2.find((m) => m.type === 'ticker');
+    if (ticker?.type !== 'ticker') throw new Error('brak ticker');
+    expect(ticker.messages.map((m) => m.text)).toEqual(['trwały komunikat']);
+    ws.close();
+    ws2.close();
   });
 });

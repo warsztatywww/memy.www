@@ -9,6 +9,6 @@ export interface SpecialMode {
 
 // Nowy tryb = nowy plik w tym katalogu + wpis tutaj
 // (+ odpowiednik kliencki w src/client/specials/).
-export function createSpecials(haToken: string): SpecialMode[] {
-  return [createPantrySpecial(), createShowersSpecial(haToken)];
+export function createSpecials(haToken: string, fetchFn: typeof fetch = fetch): SpecialMode[] {
+  return [createPantrySpecial(fetchFn), createShowersSpecial(haToken, fetchFn)];
 }
