@@ -6,4 +6,7 @@ services:
     volumes:
       - ./memy:/media
       - ./reklamy:/ads
+    environment:
+      # token Home Assistanta (smart.www22.duck.edu.pl) — wymagany
+      HA_TOKEN: "REDACTED_HA_TOKEN"
     restart: unless-stopped

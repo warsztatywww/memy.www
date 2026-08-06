@@ -9,7 +9,7 @@ Wymagania: Node 22+, `ffprobe` w PATH (pakiet ffmpeg).
 
 ```bash
 npm install
-npm run dev        # vite build --watch + tsx watch
+HA_TOKEN=<token> npm run dev        # vite build --watch + tsx watch
 # panel:  http://localhost:8080/
 # player: http://localhost:8080/player
 ```
@@ -30,6 +30,7 @@ docker compose up -d --build
 
 | Zmienna | Domyślnie | Opis |
 |---|---|---|
+| `HA_TOKEN` | — (wymagany) | token Home Assistanta (slajd statusu pryszniców) |
 | `PORT` | `8080` | port HTTP/WS |
 | `MEDIA_DIR` | `./media` | katalog memów |
 | `ADS_DIR` | `./ads` | katalog reklam (tylko wideo) |
