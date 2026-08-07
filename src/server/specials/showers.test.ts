@@ -40,8 +40,8 @@ describe('createShowersSpecial', () => {
     const fakeFetch = (async () =>
       haResponse({
         ...FULL,
-        'binary_sensor.pir_t1_3_motion_2': 'on', // qWWWetek
-        'binary_sensor.pir_t1_2_motion': 'off', // qWWWetka
+        'binary_sensor.qwwwetek_delayed': 'on',
+        'binary_sensor.qwwwetka_delayed': 'off',
       })) as typeof fetch;
     const data = (await createShowersSpecial(TOKEN, fakeFetch).fetchData()) as ShowersData;
     expect(data.qwwwetek.occupancy).toBe('occupied');
@@ -53,8 +53,8 @@ describe('createShowersSpecial', () => {
     const fakeFetch = (async () =>
       haResponse({
         ...FULL,
-        'binary_sensor.pir_t1_3_motion': 'on', // WWWIPownia
-        'binary_sensor.pir_t1_3_motion_2': 'off', // qWWWetek
+        'binary_sensor.wwwipownia_delayed': 'on',
+        'binary_sensor.qwwwetek_delayed': 'off',
       })) as typeof fetch;
     const data = (await createShowersSpecial(TOKEN, fakeFetch).fetchData()) as ShowersData;
     expect(data.wwwipownia.occupancy).toBe('occupied');

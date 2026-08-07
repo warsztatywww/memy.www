@@ -10,12 +10,12 @@ const LIGHTS = {
   wwwipownia: 'switch.vipownia_wwwipownia',
 } as const;
 
-// Czujniki obecności (PIR). Uwaga: ID nie zgadzają się z kabinami — rozstrzyga
-// friendly_name w HA („qWWWetek sensor Motion" = pir_t1_3_motion_2 itd.).
+// Czujniki obecności — wersje „delayed" z HA: surowe PIR-y gasną po chwili
+// bezruchu, te mają podtrzymanie, więc stojący pod prysznicem nie znika.
 const PRESENCE = {
-  qwwwetek: 'binary_sensor.pir_t1_3_motion_2',
-  qwwwetka: 'binary_sensor.pir_t1_2_motion',
-  wwwipownia: 'binary_sensor.pir_t1_3_motion',
+  qwwwetek: 'binary_sensor.qwwwetek_delayed',
+  qwwwetka: 'binary_sensor.qwwwetka_delayed',
+  wwwipownia: 'binary_sensor.wwwipownia_delayed',
 } as const;
 
 const SOMTASMA_LIGHT = 'light.somtasma';
