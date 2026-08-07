@@ -1,4 +1,4 @@
-import type { ClientMessage, PongMessage, ServerMessage } from '../../shared/types';
+import type { ClientMessage, HelloMessage, PongMessage, ServerMessage } from '../../shared/types';
 import { SyncedClock } from './clock';
 
 export interface Connection {
@@ -6,13 +6,23 @@ export interface Connection {
   clock: SyncedClock;
 }
 
-export type IncomingMessage = Exclude<ServerMessage, PongMessage>;
+export type IncomingMessage = Exclude<ServerMessage, PongMessage | HelloMessage>;
 
 const PING_INTERVAL_MS = 10_000;
 const BACKOFF_MS = [1000, 2000, 4000, 8000, 10_000];
 
+/** Pilnuje bootId serwera: pierwszy zapamiętuje, każdy inny = serwer wstał na nowym kodzie. */
+export function createBootTracker(onRestart: () => void): (bootId: string) => void {
+  let known: string | null = null;
+  return (bootId) => {
+    if (known === null) known = bootId;
+    else if (known !== bootId) onRestart();
+  };
+}
+
 export function connect(onMessage: (msg: IncomingMessage) => void): Connection {
   const clock = new SyncedClock();
+  const trackBoot = createBootTracker(() => location.reload());
   let ws: WebSocket | null = null;
   let attempt = 0;
   let pingTimer: ReturnType<typeof setInterval> | undefined;
@@ -28,6 +38,7 @@ export function connect(onMessage: (msg: IncomingMessage) => void): Connection {
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data) as ServerMessage;
       if (msg.type === 'pong') clock.addSample(msg.t0, msg.serverTime, Date.now());
+      else if (msg.type === 'hello') trackBoot(msg.bootId);
       else onMessage(msg);
     };
     ws.onclose = () => {

@@ -33,6 +33,13 @@ export interface HistoryMessage {
   entries: HistoryEntry[]; // od najnowszego
 }
 
+// Wysyłana jako pierwsza po połączeniu. `bootId` jest losowany przy starcie
+// procesu — jego zmiana po reconnekcie znaczy „serwer zaktualizowany, przeładuj się".
+export interface HelloMessage {
+  type: 'hello';
+  bootId: string;
+}
+
 export interface PongMessage {
   type: 'pong';
   t0: number;
@@ -52,7 +59,13 @@ export interface TickerMessage {
   messages: TickerItem[];
 }
 
-export type ServerMessage = StateMessage | HistoryMessage | PongMessage | StatusMessage | TickerMessage;
+export type ServerMessage =
+  | HelloMessage
+  | StateMessage
+  | HistoryMessage
+  | PongMessage
+  | StatusMessage
+  | TickerMessage;
 
 export interface PingMessage { type: 'ping'; t0: number; }
 export interface PlayAdMessage { type: 'playAd'; }

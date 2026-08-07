@@ -59,15 +59,44 @@ function openWs(): Promise<{ ws: WebSocket; messages: ServerMessage[] }> {
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 describe('app', () => {
-  test('po połączeniu klient dostaje state (idle), history i ticker', async () => {
+  test('po połączeniu klient dostaje hello, state (idle), history i ticker', async () => {
     const { ws, messages } = await openWs();
     await wait(200);
-    expect(messages.slice(0, 3).map((m) => m.type)).toEqual(['state', 'history', 'ticker']);
-    const state = messages[0];
+    expect(messages.slice(0, 4).map((m) => m.type)).toEqual(['hello', 'state', 'history', 'ticker']);
+    const state = messages[1];
     if (state.type !== 'state') throw new Error('unreachable');
     expect(state.item.kind).toBe('idle');
     expect(state.serverNow).toBeTypeOf('number');
     ws.close();
+  });
+
+  test('hello ma niepusty bootId, ten sam dla wszystkich klientów jednej instancji', async () => {
+    const { ws, messages } = await openWs();
+    const { ws: ws2, messages: m2 } = await openWs();
+    await wait(200);
+    const hello = messages.find((m) => m.type === 'hello');
+    const hello2 = m2.find((m) => m.type === 'hello');
+    if (hello?.type !== 'hello' || hello2?.type !== 'hello') throw new Error('brak hello');
+    expect(hello.bootId).toBeTruthy();
+    expect(hello2.bootId).toBe(hello.bootId);
+    ws.close();
+    ws2.close();
+  });
+
+  test('restart serwera zmienia bootId', async () => {
+    const { ws, messages } = await openWs();
+    await wait(200);
+    const before = messages.find((m) => m.type === 'hello');
+    if (before?.type !== 'hello') throw new Error('brak hello');
+    ws.close();
+    await app.stop();
+    await startApp();
+    const { ws: ws2, messages: m2 } = await openWs();
+    await wait(200);
+    const after = m2.find((m) => m.type === 'hello');
+    if (after?.type !== 'hello') throw new Error('brak hello');
+    expect(after.bootId).not.toBe(before.bootId);
+    ws2.close();
   });
 
   test('ping → pong z t0 i serverTime', async () => {

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import http from 'node:http';
 import { join } from 'node:path';
@@ -5,6 +6,7 @@ import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import type {
   ClientMessage,
+  HelloMessage,
   HistoryMessage,
   PantryData,
   ShowersData,
@@ -66,6 +68,8 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server, path: '/ws' });
 
+  const bootId = randomUUID(); // zmiana po reconnekcie = update serwera → klient się przeładowuje
+
   const historyMessage = (): HistoryMessage => ({ type: 'history', entries: radio.history() });
   const tickerMessage = (): TickerMessage => ({ type: 'ticker', messages: ticker.messages() });
   const statusMessage = (): StatusMessage | null => {
@@ -97,6 +101,7 @@ export async function createApp(config: Config, opts: { fetchFn?: typeof fetch }
 
   wss.on('connection', (ws) => {
     ws.on('error', (err) => console.warn('[ws] client error:', err.message));
+    ws.send(JSON.stringify({ type: 'hello', bootId } satisfies HelloMessage));
     ws.send(JSON.stringify(radio.stateMessage()));
     ws.send(JSON.stringify(historyMessage()));
     ws.send(JSON.stringify(tickerMessage()));

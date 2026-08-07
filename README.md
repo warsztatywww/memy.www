@@ -3,6 +3,10 @@
 Zsynchronizowane „radio memowe": wszyscy klienci widzą w tym samym momencie ten sam
 mem / film / reklamę / tryb specjalny. Panel kontrolny na `/`, odtwarzacz na `/player`.
 
+Serwer losuje przy starcie `bootId` i wysyła go w wiadomości `hello` przy każdym
+połączeniu WS. Gdy klient po reconnekcie zobaczy inny `bootId` niż zapamiętany,
+robi `location.reload()` — po deployu wszystkie playery same podnoszą nowy kod.
+
 ## Szybki start (dev)
 
 Wymagania: Node 22+, `ffprobe` w PATH (pakiet ffmpeg).
