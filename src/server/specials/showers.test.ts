@@ -40,13 +40,25 @@ describe('createShowersSpecial', () => {
     const fakeFetch = (async () =>
       haResponse({
         ...FULL,
-        'binary_sensor.qwwwetek_occupancy': 'on',
-        'binary_sensor.qwwwetka_occupancy': 'off',
+        'binary_sensor.pir_t1_3_motion_2': 'on', // qWWWetek
+        'binary_sensor.pir_t1_2_motion': 'off', // qWWWetka
       })) as typeof fetch;
     const data = (await createShowersSpecial(TOKEN, fakeFetch).fetchData()) as ShowersData;
     expect(data.qwwwetek.occupancy).toBe('occupied');
     expect(data.qwwwetka.occupancy).toBe('free');
     expect(data.wwwipownia.occupancy).toBe('unknown');
+  });
+
+  test('czujnik WWWipownii nie miesza się z qWWWetkiem', async () => {
+    const fakeFetch = (async () =>
+      haResponse({
+        ...FULL,
+        'binary_sensor.pir_t1_3_motion': 'on', // WWWIPownia
+        'binary_sensor.pir_t1_3_motion_2': 'off', // qWWWetek
+      })) as typeof fetch;
+    const data = (await createShowersSpecial(TOKEN, fakeFetch).fetchData()) as ShowersData;
+    expect(data.wwwipownia.occupancy).toBe('occupied');
+    expect(data.qwwwetek.occupancy).toBe('free');
   });
 
   test('stan unavailable → unknown; preset unknown → null', async () => {

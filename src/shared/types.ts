@@ -90,7 +90,7 @@ export type ShowerLight = 'on' | 'off' | 'unknown';
 export type ShowerOccupancy = 'occupied' | 'free' | 'unknown';
 export interface ShowerState {
   light: ShowerLight;
-  occupancy: ShowerOccupancy; // z czujnika obecności; 'unknown' dopóki czujników nie ma w HA
+  occupancy: ShowerOccupancy; // z czujnika PIR; 'unknown' gdy czujnik nie odpowiada
 }
 export interface WwwipowniaState extends ShowerState {
   somtasma: ShowerLight; // pasek LED

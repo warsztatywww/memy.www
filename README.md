@@ -57,9 +57,9 @@ Górny pasek to przewijany ticker — komunikaty dodaje się i usuwa w panelu
 (sekcja „Pasek informacyjny"); lista jest trwała (`DATA_DIR/ticker.json`),
 pusta lista ukrywa pasek. Dolny pasek pokazuje status zapasów (ser/mleko/chleb)
 i zajętość pryszniców — serwer odpytuje źródła co `STATUS_INTERVAL` sekund
-i wypycha zmiany do playerów po WebSockecie. Dopóki w Home Assistancie nie ma
-czujników obecności, zajętość prysznica zgaduje się ze stanu światła
-(„zajęty?"/„wolny?").
+i wypycha zmiany do playerów po WebSockecie. Zajętość bierze się z czujników PIR
+w Home Assistancie („zajęty"/„wolny"); gdy czujnik nie odpowiada, zgaduje się ze
+stanu światła („zajęty?"/„wolny?").
 
 ## Testy
 
