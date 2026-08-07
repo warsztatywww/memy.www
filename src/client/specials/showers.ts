@@ -98,10 +98,12 @@ function drawSteam(
 
 export const showersSpecial: ClientSpecial = {
   id: 'showers',
+  // po jednej kabinie na każdy tryb: woda z obecności, sucho mimo światła,
+  // oraz fallback na światło przy martwym czujniku
   previewData: {
     qwwwetek: { light: 'on', occupancy: 'occupied' },
-    qwwwetka: { light: 'off', occupancy: 'free' },
-    wwwipownia: { light: 'on', occupancy: 'unknown', somtasma: 'on', somtasmaPreset: 'Pride' },
+    qwwwetka: { light: 'on', occupancy: 'free' },
+    wwwipownia: { light: 'off', occupancy: 'unknown', somtasma: 'on', somtasmaPreset: 'Pride' },
   } satisfies ShowersData,
 
   render(ctx, t, w, h, rawData, rng): void {
@@ -126,9 +128,14 @@ export const showersSpecial: ClientSpecial = {
       const railY = top + h * 0.095; // drążek zasłonki, poniżej głowicy
       const hemY = floorY - h * 0.09; // dół zasłonki — szczelina nad żwirem
       const lightOn = st.light === 'on';
+      // Woda i para znaczą „ktoś się kąpie", więc idą z czujnika obecności, a nie
+      // ze światła — zapalona lampa w pustej kabinie nie ma lać wody. Gdy czujnik
+      // milczy, spadamy na światło: padnięty PIR ma degradować slajd do starego
+      // zachowania, a nie zamrażać kabinę na sucho (co wygląda jak błąd renderu).
+      const wet = st.occupancy === 'unknown' ? lightOn : st.occupancy === 'occupied';
       const phase = cabin.x * 40;
 
-      if (lightOn) drawSteam(ctx, t, h, ix, iw, top, rng);
+      if (wet) drawSteam(ctx, t, h, ix, iw, top, rng);
 
       // somtaśma: ramka LED wokół konfesjonału — kolor wg presetu z HA
       const isKonfesjonal = cabin.key === 'wwwipownia';
@@ -182,7 +189,7 @@ export const showersSpecial: ClientSpecial = {
       ctx.fill();
 
       // strugi wody: spod głowicy do zasłonki i w szczelinie nad żwirem
-      if (lightOn) {
+      if (wet) {
         ctx.strokeStyle = 'rgba(190, 225, 245, 0.35)';
         ctx.lineWidth = Math.max(1.5, h * 0.002);
         const fallTop = headY + h * 0.01;
@@ -228,10 +235,13 @@ export const showersSpecial: ClientSpecial = {
         ctx.ellipse(px, py, r * 1.3, r, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+      // ciepła plama od lampy na żwirze
       if (lightOn) {
         ctx.fillStyle = 'rgba(255, 190, 90, 0.08)';
         ctx.fillRect(ix, floorY - h * 0.018, iw, h * 0.034);
-        // rozbryzgi na kamykach
+      }
+      // rozbryzgi na kamykach — od wody, nie od światła
+      if (wet) {
         ctx.fillStyle = 'rgba(220, 240, 250, 0.9)';
         for (let i = 0; i < 5; i++) {
           const sx = cx + (rng() - 0.5) * headW * 1.4;
