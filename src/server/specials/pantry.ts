@@ -1,4 +1,5 @@
 import type { PantryData, PantryItemState, PantryStatus } from '../../shared/types';
+import { createFailureLog } from './failure-log';
 import type { SpecialMode } from './index';
 
 const SOURCES = {
@@ -16,26 +17,36 @@ export function parseStatus(text: string): PantryStatus {
   return 'out';
 }
 
-async function fetchOne(url: string, fetchFn: typeof fetch): Promise<PantryItemState> {
+type NoteFailure = (source: string, err: unknown | null) => void;
+
+async function fetchOne(
+  name: string,
+  url: string,
+  fetchFn: typeof fetch,
+  note: NoteFailure,
+): Promise<PantryItemState> {
   try {
     const res = await fetchFn(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = (await res.text()).trim();
+    note(name, null);
     return { status: parseStatus(text), text };
-  } catch {
+  } catch (err) {
+    note(name, err);
     return { status: 'unknown', text: '???' };
   }
 }
 
 export function createPantrySpecial(fetchFn: typeof fetch = fetch): SpecialMode {
+  const note = createFailureLog('pantry');
   return {
     id: 'pantry',
     duration: 15_000,
     async fetchData(): Promise<PantryData> {
       const [ser, mleko, chleb] = await Promise.all([
-        fetchOne(SOURCES.ser, fetchFn),
-        fetchOne(SOURCES.mleko, fetchFn),
-        fetchOne(SOURCES.chleb, fetchFn),
+        fetchOne('ser', SOURCES.ser, fetchFn, note),
+        fetchOne('mleko', SOURCES.mleko, fetchFn, note),
+        fetchOne('chleb', SOURCES.chleb, fetchFn, note),
       ]);
       return { ser, mleko, chleb };
     },

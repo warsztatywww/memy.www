@@ -1,4 +1,5 @@
 import type { ShowerLight, ShowerOccupancy, ShowersData } from '../../shared/types';
+import { createFailureLog } from './failure-log';
 import type { SpecialMode } from './index';
 
 const HA_URL = 'http://smart.www22.duck.edu.pl';
@@ -43,6 +44,7 @@ const UNKNOWN_DATA: ShowersData = {
 };
 
 export function createShowersSpecial(token: string, fetchFn: typeof fetch = fetch): SpecialMode {
+  const note = createFailureLog('showers');
   return {
     id: 'showers',
     duration: 15_000,
@@ -56,7 +58,9 @@ export function createShowersSpecial(token: string, fetchFn: typeof fetch = fetc
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw = (await res.json()) as HAState[];
         states = new Map(raw.map((s) => [s.entity_id, s.state]));
-      } catch {
+        note(HA_URL, null);
+      } catch (err) {
+        note(HA_URL, err);
         return structuredClone(UNKNOWN_DATA);
       }
       const preset = states.get(SOMTASMA_PRESET);
