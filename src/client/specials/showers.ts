@@ -29,6 +29,34 @@ const FOLDS = 8;
 
 const UNKNOWN_STATE: ShowerState = { light: 'unknown', occupancy: 'unknown' };
 
+// ── somtaśma: presety paska LED (select.somtasma_preset w HA) ────────────────
+// Taśma jest nieadresowalna — cała świeci jednym kolorem naraz, więc preset to
+// po prostu funkcja koloru w czasie. Klucz mapy = nazwa presetu małymi literami;
+// nieznany preset leci na SOMTASMA_FALLBACK, żeby nowy wpis w HA nie zgasił ramki.
+interface SomtasmaPreset {
+  color: (t: number) => string; // kolor całej taśmy w chwili t
+  dashed?: boolean; // przerywana ramka — znak, że presetu nie znamy
+  off?: boolean; // preset gasi taśmę (= to samo co zgaszone light.somtasma)
+}
+
+const SOMTASMA_OFF: SomtasmaPreset = { color: () => '#1B2A33', off: true };
+const SOMTASMA_FALLBACK: SomtasmaPreset = {
+  color: (t) => `hsl(${(t / 5) % 360}, 90%, 60%)`,
+  dashed: true,
+};
+
+const SOMTASMA_PRESETS: Record<string, SomtasmaPreset> = {
+  // tęcza jak na nieadresowalnym RGB: cały pasek przechodzi przez kolory naraz
+  pride: { color: (t) => `hsl(${(t / 22) % 360}, 92%, 58%)` },
+  'prayer time': { color: () => '#FF2B2B' },
+  'biały jak wdzianko papieża': { color: () => '#FFF6E4' },
+  off: SOMTASMA_OFF,
+};
+
+function somtasmaPreset(name: string | null): SomtasmaPreset {
+  return (name && SOMTASMA_PRESETS[name.trim().toLowerCase()]) || SOMTASMA_FALLBACK;
+}
+
 // pręt stalowy: czarny z wąskim blikiem wzdłuż lewej krawędzi
 function rod(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, lw: number): void {
   ctx.lineCap = 'round';
@@ -73,7 +101,7 @@ export const showersSpecial: ClientSpecial = {
   previewData: {
     qwwwetek: { light: 'on', occupancy: 'occupied' },
     qwwwetka: { light: 'off', occupancy: 'free' },
-    wwwipownia: { light: 'on', occupancy: 'unknown', somtasma: 'on', somtasmaPreset: 'Rainbow' },
+    wwwipownia: { light: 'on', occupancy: 'unknown', somtasma: 'on', somtasmaPreset: 'Pride' },
   } satisfies ShowersData,
 
   render(ctx, t, w, h, rawData, rng): void {
@@ -102,20 +130,25 @@ export const showersSpecial: ClientSpecial = {
 
       if (lightOn) drawSteam(ctx, t, h, ix, iw, top, rng);
 
-      // somtaśma: animowana ramka LED wokół konfesjonału
+      // somtaśma: ramka LED wokół konfesjonału — kolor wg presetu z HA
       const isKonfesjonal = cabin.key === 'wwwipownia';
-      if (isKonfesjonal && data?.wwwipownia.somtasma === 'on') {
-        const hue = (t / 5) % 360;
-        // tęcza przesuwająca się wzdłuż ramki
-        const grad = ctx.createLinearGradient(x, floorY, x + cw, top);
-        for (let i = 0; i <= 6; i++) grad.addColorStop(i / 6, `hsl(${(hue + i * 60) % 360}, 90%, 60%)`);
+      const preset = isKonfesjonal && data ? somtasmaPreset(data.wwwipownia.somtasmaPreset) : null;
+      // świeci tylko gdy light.somtasma == on i preset nie jest gaszący
+      const somtasmaLit = !!preset && data?.wwwipownia.somtasma === 'on' && !preset.off;
+      if (preset && data?.wwwipownia.somtasma !== 'unknown') {
+        const style = somtasmaLit ? preset : SOMTASMA_OFF;
+        const color = style.color(t);
         ctx.save();
         ctx.lineWidth = 5;
-        ctx.setLineDash([18, 12]);
-        ctx.lineDashOffset = -t / 8;
-        ctx.shadowColor = `hsl(${hue}, 90%, 60%)`;
-        ctx.shadowBlur = h * 0.02;
-        ctx.strokeStyle = grad;
+        if (style.dashed) {
+          ctx.setLineDash([18, 12]);
+          ctx.lineDashOffset = -t / 8;
+        }
+        if (somtasmaLit) {
+          ctx.shadowColor = color;
+          ctx.shadowBlur = h * 0.02;
+        }
+        ctx.strokeStyle = color;
         const m = h * 0.014;
         roundRect(ctx, x - m, top - m, cw + m * 2, floorY - top + m * 2, m);
         ctx.stroke();
@@ -305,14 +338,14 @@ export const showersSpecial: ClientSpecial = {
       }
 
       // plakietka presetu somtaśmy pod kabiną
-      if (isKonfesjonal && data?.wwwipownia.somtasmaPreset) {
+      if (isKonfesjonal && preset && data?.wwwipownia.somtasmaPreset) {
         const label = `✨ ${data.wwwipownia.somtasmaPreset}`;
         ctx.font = `${h * 0.024}px ${MONO}`;
         const chipW = Math.min(ctx.measureText(label).width + h * 0.04, cw);
         const chipH = h * 0.044;
         const cy = floorY + h * 0.05;
         ctx.fillStyle = '#0D1B22';
-        ctx.strokeStyle = data.wwwipownia.somtasma === 'on' ? `hsl(${(t / 5) % 360}, 90%, 60%)` : '#2A4654';
+        ctx.strokeStyle = somtasmaLit ? preset.color(t) : '#2A4654';
         ctx.lineWidth = 1.5;
         roundRect(ctx, cx - chipW / 2, cy - chipH / 2, chipW, chipH, chipH / 2);
         ctx.fill();
