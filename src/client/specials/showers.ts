@@ -1,3 +1,4 @@
+import { REMONT_WWWIPOWNIA } from '../../shared/remont';
 import type { ShowersData, ShowerState } from '../../shared/types';
 import type { ClientSpecial } from './index';
 import {
@@ -96,6 +97,53 @@ function drawSteam(
   }
 }
 
+// TYMCZASOWE (patrz REMONT_WWWIPOWNIA): taśma ostrzegawcza w poprzek kabiny
+// z plakietką „REMONT" — do usunięcia razem z flagą.
+function drawRemontTape(ctx: CanvasRenderingContext2D, h: number, cx: number, cy: number, tapeW: number): void {
+  const th = h * 0.075;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-0.13);
+
+  // żółte tło + czarne ukośne pasy, przycięte do prostokąta taśmy
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-tapeW / 2, -th / 2, tapeW, th);
+  ctx.clip();
+  ctx.fillStyle = '#F2C10D';
+  ctx.fillRect(-tapeW / 2, -th / 2, tapeW, th);
+  ctx.strokeStyle = 'rgba(12, 12, 12, 0.88)';
+  ctx.lineWidth = th * 0.32;
+  ctx.beginPath();
+  for (let x = -tapeW / 2 - th * 2; x < tapeW / 2 + th * 2; x += th * 0.82) {
+    ctx.moveTo(x, th / 2 + 2);
+    ctx.lineTo(x + th, -th / 2 - 2);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(90, 68, 0, 0.9)';
+  ctx.lineWidth = Math.max(1.5, h * 0.002);
+  ctx.strokeRect(-tapeW / 2, -th / 2, tapeW, th);
+
+  // plakietka na środku taśmy
+  const label = '🚧 REMONT';
+  ctx.font = `bold ${th * 0.46}px ${MONO}`;
+  const plateW = Math.min(ctx.measureText(label).width + th * 0.8, tapeW * 0.94);
+  const plateH = th * 0.78;
+  ctx.fillStyle = '#12100A';
+  ctx.strokeStyle = '#F2C10D';
+  ctx.lineWidth = 2;
+  roundRect(ctx, -plateW / 2, -plateH / 2, plateW, plateH, plateH * 0.28);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#FFDE5C';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, 0, h * 0.002, plateW * 0.9);
+  ctx.restore();
+}
+
 export const showersSpecial: ClientSpecial = {
   id: 'showers',
   // po jednej kabinie na każdy tryb: woda z obecności, sucho mimo światła,
@@ -132,7 +180,9 @@ export const showersSpecial: ClientSpecial = {
       // ze światła — zapalona lampa w pustej kabinie nie ma lać wody. Gdy czujnik
       // milczy, spadamy na światło: padnięty PIR ma degradować slajd do starego
       // zachowania, a nie zamrażać kabinę na sucho (co wygląda jak błąd renderu).
-      const wet = st.occupancy === 'unknown' ? lightOn : st.occupancy === 'occupied';
+      // TYMCZASOWE: kabina w remoncie — bez wody, pary i statusu zajętości
+      const remont = REMONT_WWWIPOWNIA && cabin.key === 'wwwipownia';
+      const wet = remont ? false : st.occupancy === 'unknown' ? lightOn : st.occupancy === 'occupied';
       const phase = cabin.x * 40;
 
       if (wet) drawSteam(ctx, t, h, ix, iw, top, rng);
@@ -313,12 +363,12 @@ export const showersSpecial: ClientSpecial = {
       ctx.stroke();
 
       // zawieszka „?" gdy stan światła nieznany
-      if (st.light === 'unknown') {
+      if (!remont && st.light === 'unknown') {
         drawUnknownTag(ctx, h, cx, railY + (hemY - railY) * 0.35);
       }
 
       // wskaźnik zajętości zawieszony na zasłonce — tylko gdy czujnik daje odczyt
-      if (st.occupancy !== 'unknown') {
+      if (!remont && st.occupancy !== 'unknown') {
         const occupied = st.occupancy === 'occupied';
         drawPill(
           ctx, t, h, cx, hemY - h * 0.06, iw * 0.62, h * 0.062,
@@ -363,6 +413,9 @@ export const showersSpecial: ClientSpecial = {
         ctx.fillStyle = TEXT;
         ctx.fillText(label, cx, cy + h * 0.002, cw * 0.9);
       }
+
+      // TYMCZASOWE: taśma „REMONT" na wierzchu kabiny
+      if (remont) drawRemontTape(ctx, h, cx, top + (floorY - top) * 0.5, cw * 1.08);
     }
   },
 };
