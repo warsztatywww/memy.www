@@ -10,11 +10,11 @@ function haResponse(states: Record<string, string>): Response {
 }
 
 const FULL: Record<string, string> = {
-  'switch.qwwwetek': 'on',
-  'switch.qwwwetka': 'off',
-  'switch.vipownia_wwwipownia': 'on',
-  'light.somtasma': 'on',
-  'select.somtasma_preset': 'Rainbow',
+  'switch.qwwwetek_switch': 'on',
+  'switch.qwwwetka_switch': 'off',
+  'switch.vipownia_switch': 'on',
+  'light.wled_gledopto': 'on',
+  'select.wled_gledopto_preset': 'Rainbow',
 };
 
 describe('createShowersSpecial', () => {
@@ -64,8 +64,8 @@ describe('createShowersSpecial', () => {
   test('stan unavailable → unknown; preset unknown → null', async () => {
     const fakeFetch = (async () =>
       haResponse({
-        'switch.qwwwetek': 'unavailable',
-        'select.somtasma_preset': 'unknown',
+        'switch.qwwwetek_switch': 'unavailable',
+        'select.wled_gledopto_preset': 'unknown',
       })) as typeof fetch;
     const data = (await createShowersSpecial(TOKEN, fakeFetch).fetchData()) as ShowersData;
     expect(data.qwwwetek.light).toBe('unknown');

@@ -6,9 +6,9 @@ const HA_URL = 'http://smart.www22.duck.edu.pl';
 const FETCH_TIMEOUT_MS = 3000;
 
 const LIGHTS = {
-  qwwwetek: 'switch.qwwwetek',
-  qwwwetka: 'switch.qwwwetka',
-  wwwipownia: 'switch.vipownia_wwwipownia',
+  qwwwetek: 'switch.qwwwetek_switch',
+  qwwwetka: 'switch.qwwwetka_switch',
+  wwwipownia: 'switch.vipownia_switch',
 } as const;
 
 // Czujniki obecności — wersje „delayed" z HA: surowe PIR-y gasną po chwili
@@ -19,8 +19,9 @@ const PRESENCE = {
   wwwipownia: 'binary_sensor.wwwipownia_delayed',
 } as const;
 
-const SOMTASMA_LIGHT = 'light.somtasma';
-const SOMTASMA_PRESET = 'select.somtasma_preset';
+// Somtaśma to pasek WLED — w HA wystawiony jako „WLED-Gledopto".
+const SOMTASMA_LIGHT = 'light.wled_gledopto';
+const SOMTASMA_PRESET = 'select.wled_gledopto_preset';
 
 interface HAState {
   entity_id: string;
