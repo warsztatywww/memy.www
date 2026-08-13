@@ -1,5 +1,4 @@
 import { mulberry32 } from '../../shared/prng';
-import { REMONT_WWWIPOWNIA } from '../../shared/remont';
 import type { PantryItemState, ShowerState, StateMessage, StatusMessage, TickerItem } from '../../shared/types';
 import { connect } from '../lib/connection';
 import { clientSpecials } from '../specials/index';
@@ -213,15 +212,13 @@ function renderStatus(msg: StatusMessage): void {
   statusPantry.replaceChildren(
     ...pantry.map(([label, item]) => statusItem(label, PANTRY_CLS[item.status] ?? 'unknown')),
   );
-  // trzeci element krotki = TYMCZASOWY remont (plakietka zamiast statusu)
-  const showers: [string, ShowerState, boolean?][] = [
+  const showers: [string, ShowerState][] = [
     ['qWWWetek', msg.showers.qwwwetek],
     ['qWWWetka', msg.showers.qwwwetka],
-    ['WWWipownia', msg.showers.wwwipownia, REMONT_WWWIPOWNIA],
+    ['WWWipownia', msg.showers.wwwipownia],
   ];
   statusShowers.replaceChildren(
-    ...showers.map(([name, s, remont]) => {
-      if (remont) return statusItem(`🚧 ${name}: REMONT`, 'remont');
+    ...showers.map(([name, s]) => {
       const b = showerBadge(s);
       return statusItem(`🚿 ${name}: ${b.label}`, b.cls);
     }),

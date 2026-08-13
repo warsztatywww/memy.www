@@ -53,8 +53,3 @@ body { display: flex; flex-direction: column; }
 .status-item.warn { color: #ffd75e; }
 .status-item.bad { color: #ff6b6b; }
 .status-item.unknown { color: #777; }
-/* TYMCZASOWE: plakietka remontu — żółta taśma ostrzegawcza */
-.status-item.remont {
-  color: #12100a; background: repeating-linear-gradient(-45deg, #f2c10d 0 8px, #d9a800 8px 16px);
-  padding: 0.2vh 0.8vw; border-radius: 0.6vh; font-weight: 800;
-}
