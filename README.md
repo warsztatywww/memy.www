@@ -13,7 +13,8 @@ Wymagania: Node 22+, `ffprobe` w PATH (pakiet ffmpeg).
 
 ```bash
 npm install
-HA_TOKEN=<token> npm run dev        # vite build --watch + tsx watch
+cp .env.example .env                # i wpisz HA_TOKEN (.env jest w .gitignore)
+npm run dev                         # vite build --watch + tsx watch
 # panel:  http://localhost:8080/
 # player: http://localhost:8080/player
 ```
@@ -30,13 +31,14 @@ Nowy plik w `./media` przerywa odtwarzanie i leci z banerem „NOWY MEM!"
 docker compose up -d --build
 ```
 
-`docker-compose.yml` montuje `./memy` → `/media`, `./reklamy` → `/ads` i `./data` → `/data`.
+`docker-compose.yml` montuje `./memy` → `/media`, `./reklamy` → `/ads` i `./data` → `/data`,
+a `HA_TOKEN` bierze z `.env` obok siebie (`env_file`) — plik musi istnieć na serwerze.
 
 ## Konfiguracja (env)
 
 | Zmienna | Domyślnie | Opis |
 |---|---|---|
-| `HA_TOKEN` | — (wymagany) | token Home Assistanta (slajd statusu pryszniców) |
+| `HA_TOKEN` | — (wymagany) | token Home Assistanta (slajd statusu pryszniców); trzymany w `.env`, nigdy w repo |
 | `PORT` | `8080` | port HTTP/WS |
 | `MEDIA_DIR` | `./media` | katalog memów |
 | `ADS_DIR` | `./ads` | katalog reklam (tylko wideo) |

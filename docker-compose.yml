@@ -8,9 +8,10 @@ services:
       - /mnt/internet.www/memy.www:/media
       - /mnt/internet.www/youtube.com:/ads
       - ./data:/data
+    # HA_TOKEN (token Home Assistanta) — wymagany, trzymany w .env obok tego pliku
+    env_file:
+      - .env
     environment:
-      # token Home Assistanta (smart.www22.duck.edu.pl) — wymagany
-      HA_TOKEN: "REDACTED_HA_TOKEN"
       AD_INTERVAL: 25  # memów — ~5 min między reklamami przy obrazkach po 10 s
       SPECIAL_INTERVAL: 120  # s
     labels:

@@ -21,7 +21,7 @@ function num(v: string | undefined, fallback: number): number {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const haToken = (env.HA_TOKEN ?? '').trim();
   if (!haToken) {
-    throw new Error('Brak HA_TOKEN (token Home Assistanta) — ustaw w docker-compose.yml albo w środowisku.');
+    throw new Error('Brak HA_TOKEN (token Home Assistanta) — wpisz go do pliku .env (wzór: .env.example) albo ustaw w środowisku.');
   }
   return {
     port: num(env.PORT, 8080),
